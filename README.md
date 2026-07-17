@@ -54,18 +54,20 @@ The working dataset used for this project was updated as at 20 May 2026 and cove
 ## Repository Structure
 
 ```text
-singapore-hdb-resale-price-drivers-2031-forecast/
-│
-├── README.md
-├── data/
-│   └── data_source_notes.md
-│
-├── sql/
-│   ├── 01_data_checks.sql
-│   ├── 02_cleaning_and_features.sql
-│   ├── 03_part1_analysis_outputs.sql
-│   └── 04_segment_analysis.sql
-│
-├── python/
-├── reports/
-└── charts/
+data/
+  data_source_notes.md
+
+sql/
+  README.md
+  01_data_checks.sql
+  02_cleaning_and_features.sql
+  03_part1_analysis_outputs.sql
+  04_segment_analysis.sql
+
+python/
+  README.md
+  01_part1_charts_and_forecast.py
+  02_part2_regression_models.py
+  03_backtesting_and_diagnostics.py
+
+requirements.txt
