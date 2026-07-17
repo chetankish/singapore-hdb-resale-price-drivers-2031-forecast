@@ -1,0 +1,15 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Output folders created by Python scripts
+outputs/
+
+# Raw data files kept out of GitHub
+data/Raw Data Combined.csv
+data/Raw Data Combined.xlsx
+data/*.db
+data/*.sqlite
+
+# System files
+.DS_Store
