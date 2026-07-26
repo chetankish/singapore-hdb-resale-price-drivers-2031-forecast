@@ -13,7 +13,7 @@ The analysis is split into two parts:
 
 ## Business Question
 
-How have HDB resale prices changed across time, flat type, town and remaining lease, and what does this suggest about resale affordability pressure by 2031?
+How have HDB resale prices changed across time, flat type, town, floor area and remaining lease, and what does this suggest about resale affordability pressure by 2031?
 
 ## Supporting Questions
 
@@ -31,7 +31,7 @@ Source: https://data.gov.sg/collections/189/view
 
 The working dataset used for this project was updated as at 20 May 2026 and covers resale transactions from January 1990 to May 2026.
 
-The full raw dataset is not uploaded here to keep the repository lightweight. Users can download the latest official data directly from data.gov.sg.
+Because the official data.gov.sg collection continues to update, this repository includes the frozen source files used for the project in `data/raw/`. The larger combined working files are not uploaded because they exceed GitHub's normal file size limit.
 
 ## Tools Used
 
@@ -45,6 +45,14 @@ The full raw dataset is not uploaded here to keep the repository lightweight. Us
 ```text
 data/
   data_source_notes.md
+  raw/
+    Footnotes in Annual Report for Price Range of HDB Flats Offered.pdf
+    Price Range of HDB Flats Offered.csv
+    Resale Flat Prices (Based on Approval Date), 1990 - 1999.csv
+    Resale Flat Prices (Based on Approval Date), 2000 - Feb 2012.csv
+    Resale Flat Prices (Based on Registration Date), From 2012 Mar to 2014 Dec.csv
+    Resale Flat Prices (Based on Registration Date), From 2015 Jan to 2016 Dec.csv
+    Resale Flat Prices (Based on Registration Date), From 2017 Jan onwards.csv
 
 sql/
   README.md
@@ -58,6 +66,10 @@ python/
   01_part1_charts_and_forecast.py
   02_part2_regression_models.py
   03_backtesting_and_diagnostics.py
+
+reports/
+  HDB_Resale_Prices_Part_1_v28.html
+  HDB_Resale_Prices_Part_2_v13.html
 
 requirements.txt
 README.md
@@ -79,7 +91,7 @@ The code files are arranged in this order:
 
 2. `sql/02_cleaning_and_features.sql`
 
-   Cleans the dataset and creates useful fields such as price per sqm, remaining lease years and million dollar transaction flag.
+   Cleans the dataset and creates useful fields such as price per sqm, remaining lease years and million-dollar transaction flag.
 
 3. `sql/03_part1_analysis_outputs.sql`
 
@@ -87,7 +99,7 @@ The code files are arranged in this order:
 
 4. `sql/04_segment_analysis.sql`
 
-   Creates the flat type, town, lease and million dollar transaction segment outputs used in Part 1.
+   Creates the flat type, town, lease and million-dollar transaction segment outputs used in Part 1.
 
 5. `python/01_part1_charts_and_forecast.py`
 
@@ -127,7 +139,7 @@ It covers:
 - annual median resale price
 - price per sqm
 - transaction volume
-- million dollar resale transactions
+- million-dollar resale transactions
 - flat type differences
 - town differences
 - remaining lease differences
@@ -142,8 +154,8 @@ Part 2 uses regression analysis to test the relationships more formally.
 It covers:
 
 - raw simple regression
-- semi log regression
-- lagged semi log regression
+- semi-log regression
+- lagged semi-log regression
 - hedonic regression
 - model comparison
 - backtesting
@@ -159,13 +171,13 @@ The regression models are used to compare different ways of forecasting HDB resa
 
 Used as a simple first estimate based on past resale price growth.
 
-### Semi Log Regression
+### Semi-Log Regression
 
 Used because housing prices often grow in percentage terms rather than by the same dollar amount every year.
 
-### Lagged Semi Log Regression
+### Lagged Semi-Log Regression
 
-Used because resale prices are linked over time. This years price may be partly influenced by last years price.
+Used because resale prices are linked over time. This year's price may be partly influenced by last year's price.
 
 ### Hedonic Regression
 
@@ -201,9 +213,13 @@ For this reason, the project treats the forecast as a range rather than one exac
 
 ## Current Status
 
-The SQL and Python workflow has been added to the repository.
+The SQL workflow, Python workflow, frozen source data notes and reviewed HTML reports have been added to the repository.
 
-The final HTML reports will be added after Part 1 and Part 2 are fully reviewed and finalised.
+The combined working files used locally are excluded from GitHub because of file size:
+
+- `Raw Data Combined.csv`
+- `Raw Data Combined.xlsx`
+- `Working File 2.xlsx`
 
 ## Author
 
