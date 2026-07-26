@@ -68,8 +68,8 @@ python/
   03_backtesting_and_diagnostics.py
 
 reports/
-  HDB_Resale_Prices_Part_1_v28.html
-  HDB_Resale_Prices_Part_2_v13.html
+  HDB Resale Prices Part 1.html
+  HDB Resale Prices Part 2.html
 
 requirements.txt
 README.md

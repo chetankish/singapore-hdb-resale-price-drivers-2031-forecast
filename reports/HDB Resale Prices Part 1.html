@@ -1,52 +1,220 @@
-<!DOCTYPE html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Singapore HDB Resale Prices: Market Context, Data Preparation and Price Drivers</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
 
-<html><head><meta charset="utf-8"/><title>Singapore HDB Resale Price Drivers and 2031 Forecast · Part 1 v28</title><style>body{margin:0;background:#f7f7f4;color:#222}.report{max-width:980px;margin:0 auto;background:#fff;padding:42px 54px;font-family:Georgia,"Times New Roman",serif;line-height:1.58;box-shadow:0 8px 28px rgba(0,0,0,.08)}h1{color:#174f42;font-size:42px;line-height:1.05;margin-bottom:5px}.subtitle{color:#1f6b5b;font-size:25px;font-weight:700;margin-bottom:12px}h2{color:#174f42;font-size:27px;border-top:1px solid #ddd;padding-top:20px;margin-top:38px}h3{color:#174f42;font-size:21px;margin-top:25px}p{font-size:16px;margin-bottom:13px}.chart{margin:22px 0 8px;border:1px solid #e7e7e7;padding:12px;border-radius:10px}.caption{color:#555;font-size:14px;font-style:italic;margin-top:6px}table{width:100%;border-collapse:collapse;margin:14px 0 20px;font-size:14px}th,td{border:1px solid #bdbdbd;padding:8px 9px;vertical-align:top}th{background:#1f6b5b;color:white}.note{background:#fff8df;border-left:4px solid #d0ad36;padding:12px 14px;margin:15px 0}code{background:#f1f1f1;padding:1px 4px;border-radius:3px}@media(max-width:800px){.report{padding:24px 18px}h1{font-size:32px}}
 
+@import url("https://cdn.jsdelivr.net/gh/aaaakshat/cm-web-fonts@latest/fonts.css");
 
-.caption { text-align: center; font-style: italic; color: #444; font-size: 0.95em; }
-
-
-/* Standard figure and table label style: matches Figure 1 reference */
-.gtitle {
-  font-family: Georgia, "Times New Roman", serif !important;
-  font-size: 18px !important;
-  font-weight: 700 !important;
-  fill: #444 !important;
+@font-face {
+  font-family: "KaTeX_Main";
+  src: url("https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Main-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
 }
-.table-caption {
-  font-family: Georgia, "Times New Roman", serif !important;
-  font-size: 18px !important;
-  line-height: 1.25 !important;
-  font-weight: 700 !important;
-  color: #444 !important;
-  margin: 22px 0 10px 0 !important;
-  text-align: left !important;
+@font-face {
+  font-family: "KaTeX_Main";
+  src: url("https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Main-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: "KaTeX_Main";
+  src: url("https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Main-Italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
 }
 
 
-/* Table labels now use the same card and top-left label format as the figures. */
-.table-block{
-  margin:22px 0 8px;
-  border:1px solid #e7e7e7;
-  padding:12px;
-  border-radius:10px;
-  overflow-x:auto;
-  background:#fff;
-}
-.table-block .table-caption{
-  font-family:Georgia,"Times New Roman",serif !important;
-  font-size:18px !important;
-  line-height:1.25 !important;
-  font-weight:700 !important;
-  color:#444 !important;
-  margin:0 0 14px 0 !important;
-  text-align:left !important;
-}
-.table-block table{
-  margin:0 !important;
-}
-</style><script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script></head><body><div class="report">
-<h1>Singapore HDB Resale Price Drivers and 2031 Forecast</h1><div class="subtitle">Part 1: Market Context, Data Preparation and Price Drivers</div>
+    * { font-family: "Computer Modern Serif", "Latin Modern Roman", "CMU Serif", "KaTeX_Main", "Times New Roman", serif; }
+:root {
+      --text: #111;
+      --muted: #444;
+      --rule: #777;
+      --soft: #ddd;
+      --paper: #ffffff;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: #ffffff;
+      color: var(--text);
+      font-family: "Computer Modern Serif", "Latin Modern Roman", "CMU Serif", "KaTeX_Main", "Times New Roman", serif;
+      font-size: 15.5px;
+      line-height: 1.48;
+    }
+    .paper {
+      max-width: 850px;
+      margin: 0 auto;
+      padding: 86px 72px 70px;
+      background: var(--paper);
+    }
+    .title {
+      text-align: center;
+      font-size: 25px;
+      line-height: 1.18;
+      font-weight: 700;
+      margin: 0 auto 26px;
+      max-width: 760px;
+    }
+    .author, .date {
+      text-align: center;
+      font-size: 16px;
+      margin: 0 0 14px;
+    }
+    .date { margin-bottom: 38px; }
+    .abstract {
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+      padding: 10px 48px 12px;
+      margin: 0 0 30px;
+      font-size: 14px;
+      line-height: 1.38;
+    }
+    .abstract-title {
+      text-align: center;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    h2 {
+      font-size: 22px;
+      line-height: 1.22;
+      margin: 28px 0 14px;
+      padding: 0;
+      border: none;
+      color: #111;
+      font-weight: 700;
+    }
+    h3 {
+      font-size: 18px;
+      line-height: 1.25;
+      margin: 20px 0 9px;
+      color: #111;
+      font-weight: 700;
+    }
+    h4 {
+      font-size: 16px;
+      line-height: 1.25;
+      margin: 18px 0 8px;
+      color: #111;
+      font-weight: 700;
+    }
+    p {
+      font-size: 15.5px;
+      margin: 0 0 12px;
+      color: #111;
+    }
+    .chart {
+      margin: 18px auto 12px;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      max-width: 100%;
+    }
+    .plotly-graph-div {
+      margin-left: auto;
+      margin-right: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px auto 18px;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    th, td {
+      border: none;
+      border-bottom: 1px solid #c8c8c8;
+      padding: 6px 7px;
+      vertical-align: top;
+      color: #111;
+    }
+    th {
+      background: transparent !important;
+      color: #111 !important;
+      font-weight: 700;
+      border-top: 1.4px solid #111;
+      border-bottom: 1px solid #111;
+    }
+    tr:last-child td { border-bottom: 1.4px solid #111; }
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      margin: 10px 0 18px;
+    }
+    .table-wrap table { min-width: 560px; }
+    .note {
+      background: transparent;
+      border-left: 2px solid #777;
+      padding: 8px 12px;
+      margin: 14px 0;
+      font-size: 14px;
+    }
+    code { background: transparent; font-family: "Computer Modern Typewriter", "CMU Typewriter Text", "Courier New", monospace; font-size: 0.96em; padding: 0; }
+    a { color: #111; text-decoration: underline; }
+    .caption, figcaption {
+      font-size: 13px;
+      color: #111;
+      text-align: center;
+      margin-top: 4px;
+    }
+    @media (max-width: 760px) {
+      .paper { padding: 40px 20px 60px; }
+      .title { font-size: 22px; }
+      .abstract { padding: 10px 0 12px; }
+      table { font-size: 12px; }
+    }
+    @media print {
+      body { background: white; }
+      .paper { max-width: none; padding: 0.85in 0.95in; }
+      .chart { break-inside: avoid; }
+      table { break-inside: avoid; }
+    }
+
+    h1, .subtitle { display: none; }
+    .date { display: block; margin-bottom: 38px; }
+    .table-block, .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      margin: 10px 0 18px;
+    }
+    .table-block table, .table-wrap table { min-width: 560px; }
+    .table-caption {
+      text-align: center;
+      font-size: 13px;
+      color: #111;
+      margin: 6px 0 8px;
+    }
+    .source-list {
+      margin: 8px 0 16px;
+      padding-left: 22px;
+    }
+    .source-list li, li {
+      margin-bottom: 6px;
+    }
+    .note strong { font-weight: 700; }
+    .forecast-scale { margin-top: 14px; }
+    @media (max-width: 760px) {
+      .plotly-graph-div { min-height: 360px; }
+    }
+
+</style>
+</head>
+<body>
+<main class="paper">
+  <div class="title">Singapore HDB Resale Prices: Market Context, Data Preparation and Price Drivers</div>
+  <div class="author">Chetan</div>
+  <div class="date">July 26, 2026</div>
+  <section class="abstract">
+    <div class="abstract-title">Abstract</div>
+    <div>This report examines long-run Singapore HDB resale price movements using official transaction data from 1990 to May 2026. It begins with a transparent baseline projection, then tests how sensitive the 2031 estimate is to the chosen historical starting point. The analysis then explains the data preparation workflow and compares price patterns by flat type, town, floor area, remaining lease and million-dollar transactions. The purpose is to show not only what changed in the resale market, but also why each analytical step was needed before moving into controlled modelling.</div>
+  </section>
+  <h2>Part 1</h2>
 <h2>Introduction</h2><p>As a Singaporean, the idea of owning a home one day is more than just a financial decision. It is a life milestone. In recent years, I kept seeing more news about HDB resale flats crossing the S$1 million mark. This made me wonder what the resale market might look like by the time I reach the stage of buying a home.</p><p>This question connects to my own timeline. I am expecting to graduate in two years, and ideally would like to work for another two to three years before seriously considering a home purchase. This places the possibility of my earliest buying window in about 2031. At first, my question seemed simple: how much might I be looking to pay for an HDB resale flat in 2031?</p><p>However, this personal question also connects to a broader business and policy problem. HDB resale prices do not only matter to individual buyers. They are also important to housing analysts, policymakers, financial institutions and other stakeholders who need to understand where affordability pressure is coming from, which market segments are driving price growth, and what future resale prices could look like under different assumptions.</p><p>Therefore, this project uses HDB resale transaction data to answer both a personal and stakeholder-focused question: <strong>how have HDB resale prices changed across time, flat type, town, floor area and remaining lease, and what does this suggest about resale affordability pressure by 2031?</strong></p><p>To answer this, I break the analysis into three supporting questions:</p><ol><li>Where is resale price pressure coming from?</li><li>Which market segments should stakeholders monitor?</li><li>What could resale prices look like by 2031 under different modelling assumptions?</li></ol><h2>Initial Baseline Projection</h2><p>I began with a simple growth-based projection because it provided an interpretable baseline before applying more controlled models. It gives a rough idea of what 2031 prices could look like if past growth continues, and it also allows me to test how useful a simple approach is before deciding what else needs to be checked.</p><div class="chart"><div> <div class="plotly-graph-div" id="3f299b51-b0eb-4f5c-90bf-a5ffbc04a050" style="height:440px; width:100%;"></div> <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("3f299b51-b0eb-4f5c-90bf-a5ffbc04a050")) {                    Plotly.newPlot(                        "3f299b51-b0eb-4f5c-90bf-a5ffbc04a050",                        [{"mode":"lines+markers","name":"Annual median price","x":{"dtype":"i2","bdata":"xgfHB8gHyQfKB8sHzAfNB84HzwfQB9EH0gfTB9QH1QfWB9cH2AfZB9oH2wfcB90H3gffB+AH4QfiB+MH5AflB+YH5wfoB+kH"},"y":{"dtype":"f8","bdata":"AAAAAICi6UAAAAAAANXrQAAAAAAAQO9AAAAAAIAl+UAAAAAAAI4CQQAAAAAA8wZBAAAAAABGDkEAAAAAQLMRQQAAAAAATA1BAAAAAADPDEEAAAAAwCwNQQAAAABAdwtBAAAAAMA+CkEAAAAAQH0KQQAAAABgSAtBAAAAAEB3C0EAAAAAANULQQAAAACAhA5BAAAAAKCdEkEAAAAAQCQUQQAAAADgVRZBAAAAAEAGGUEAAAAAICkbQQAAAABgxRtBAAAAAICiGUEAAAAAILgYQQAAAABABhlBAAAAAEAGGUEAAAAAAOcYQQAAAAAAahhBAAAAAKDwGUEAAAAA4HodQQAAAACQBSBBAAAAAODIIEEAAAAAYAEiQQAAAABAKiNB"},"type":"scatter"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"title":{"text":"Figure 1. Annual median HDB resale price, 1990 to 2025","x":0.01},"yaxis":{"title":{"text":"Median resale price"},"tickprefix":"S$","tickformat":",.0f"},"margin":{"l":60,"r":25,"t":64,"b":48},"font":{"size":13},"xaxis":{"title":{"text":"Year"}},"height":440},                        {"displaylogo": false, "responsive": true}                    )                };            </script> </div></div><p>The dataset used in this report contains 977,756 HDB resale transactions from January 1990 to May 2026. However, 2026 is incomplete, so I do not use it as a complete year in the main annual trend charts. Including it directly could give readers the wrong impression that the 2026 median resale price is a full year figure. The 2026 median resale price so far is S$630,000, but this only reflects transactions up to May 2026, so it is shown only as context where relevant.</p><p>Figure 1 shows that HDB resale prices increased strongly over the long run, from a median resale price of S$52,500 in 1990 to S$628,000 in 2025. However, the increase was not smooth. The early 1990s show a strong rise, which is consistent with rapid economic growth and strong housing demand during that period. The late 1990s then show a correction, which provides context for the Asian Financial Crisis and weaker market confidence.</p><p>After that, resale prices moved through several cycles. Some periods were flatter or weaker, especially after cooling measures and tighter financing rules affected the resale market. More recently, prices rose sharply after COVID related construction delays, strong resale demand and tight supply conditions. These events do not prove direct causation by themselves, but they help explain why the price trend moved in cycles rather than in a straight line.</p><p>From 1990 to 2025, the annual median HDB resale price increased from S$52,500 to S$628,000. This is a total increase of about 1,096.2%. Annualising this over 35 years gives an annualised growth rate of about 7.35% per year.</p><p><strong>If I use this 7.35% annualised growth rate as a simple mechanical projection and compound the 2025 median resale price of S$628,000 for another six years, the estimated 2031 median resale price would be about S$961,004.</strong></p><p>After calculating this, I realised that the projection is only a mechanical baseline. It assumes that future economic conditions, housing policies, interest rates, income growth, supply, demand and transaction mix remain broadly similar to the long run historical period. That is a strong assumption, so I should not treat this result as the final answer.</p><p>To check whether this rough projection is stable, I look at what happens when the annualised growth rate is calculated from different starting years. This matters because the 1990 starting point may not represent every market condition. If the starting year is unusually low or unusually high, the 2031 estimate can change significantly.</p>
 <p>To test this, I repeat the calculation from different starting years and compare how much the 2031 estimate changes.</p>
 <div class="table-block"><p class="table-caption">Table 1. First simple view across different starting points</p><table class="dataframe">
@@ -241,7 +409,7 @@ if (document.getElementById("forecast_spread_figure2_v21")) {
             bordercolor: 'rgba(120,120,120,0.25)',
             borderpad: 3,
             font: {
-                family: 'Georgia, "Times New Roman", serif',
+                family: 'Computer Modern Serif, Latin Modern Roman, CMU Serif, KaTeX_Main, Times New Roman, serif',
                 size: 12,
                 color: '#444'
             }
@@ -265,7 +433,7 @@ if (document.getElementById("forecast_spread_figure2_v21")) {
             yanchor: d.y > 0 ? 'bottom' : 'top',
             text: '<b>' + currency(d.value) + '</b><br>' + d.start,
             font: {
-                family: 'Georgia, "Times New Roman", serif',
+                family: 'Computer Modern Serif, Latin Modern Roman, CMU Serif, KaTeX_Main, Times New Roman, serif',
                 size: 15,
                 color: '#222'
             }
@@ -281,7 +449,7 @@ if (document.getElementById("forecast_spread_figure2_v21")) {
             x: 0.01,
             xanchor: 'left',
             font: {
-                family: 'Georgia, "Times New Roman", serif',
+                family: 'Computer Modern Serif, Latin Modern Roman, CMU Serif, KaTeX_Main, Times New Roman, serif',
                 size: 18,
                 color: '#444'
             }
@@ -289,7 +457,7 @@ if (document.getElementById("forecast_spread_figure2_v21")) {
         height: 600,
         margin: {l: 70, r: 70, t: 90, b: 60},
         font: {
-            family: 'Georgia, "Times New Roman", serif',
+            family: 'Computer Modern Serif, Latin Modern Roman, CMU Serif, KaTeX_Main, Times New Roman, serif',
             size: 14,
             color: '#222'
         },
@@ -316,7 +484,7 @@ if (document.getElementById("forecast_spread_figure2_v21")) {
             bgcolor: 'white',
             bordercolor: '#2d7a6b',
             font: {
-                family: 'Georgia, "Times New Roman", serif',
+                family: 'Computer Modern Serif, Latin Modern Roman, CMU Serif, KaTeX_Main, Times New Roman, serif',
                 size: 13,
                 color: '#222'
             }
@@ -594,6 +762,8 @@ if (document.getElementById("forecast_spread_figure2_v21")) {
 </tbody>
 </table></div><p>Figure 12 shows that remaining lease still matters even when the flat type, floor area and flat model are kept broadly comparable. This measure is used because HDB flats have finite 99-year leases. Flats with longer remaining leases generally have higher resale values because buyers are paying for a longer period of use. As the remaining lease gets shorter, the flat may become less attractive to some buyers, especially if CPF usage, loan eligibility or long-term holding value becomes a concern.</p><p>This also shows why age should not be ignored when comparing resale prices. Two flats may look similar in size and flat type, but the one with a longer remaining lease can still command a higher price. Therefore, remaining lease should be included in the forecasting model later, rather than relying only on year, town or flat type.</p>
 <p>Remaining lease is important because most HDB flats start with a 99-year lease. A flat with more lease remaining gives buyers a longer housing horizon and may have a wider buyer pool. The controlled example is illustrative, not a final forecast.</p><p>This answers the second supporting question. Based on the segment analysis, stakeholders should monitor 4 ROOM flats as a mainstream resale segment, million-dollar transactions by share, town level price differences and remaining lease bands.</p>
-<h2>What This Report Has Established</h2><p>Part 1 shows the logic behind the analysis rather than only chasing a final forecast number. I started with a simple growth-based projection, tested its sensitivity, and then moved into measures that better reflect how the resale market works.</p><p>Price per sqm was used because raw resale price is affected by floor area. Million-dollar transactions were studied by share because counts alone can be affected by total transaction volume. Town was used as a practical location proxy because exact amenity distances were not available. Remaining lease was included because HDB flats have finite 99-year leases.</p><p>Overall, Part 1 answers the three supporting questions at a descriptive level and creates the foundation for <a href="HDB_Resale_Prices_Part_2_v13.html">Part 2</a>. The cleaned annual series can support time-based regression models, while the cleaned transaction-level data can support hedonic regression. The main value of the project is the structured analytical workflow: prepare the data, test a simple baseline, identify its weaknesses, use better measures, and then move into more controlled forecasting.</p><h2>Project Files and Reproducibility</h2><p>The project code, SQL workflow and source notes are available in the <a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast" rel="noopener" target="_blank">GitHub repository</a>. The official HDB resale collection is available on <a href="https://data.gov.sg/collections/189/view" rel="noopener" target="_blank">data.gov.sg</a>. Because the official dataset continues to update, the project repository documents the frozen data version used for this forecast, which was updated as at 20 May 2026 and covered transactions from January 1990 to May 2026.</p><p>For the technical workflow, see the repository folders for <a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast/tree/main/sql" rel="noopener" target="_blank">SQL scripts</a>, <a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast/tree/main/python" rel="noopener" target="_blank">Python scripts</a> and <a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast/blob/main/data/data_source_notes.md" rel="noopener" target="_blank">data source notes</a>.</p><h2>References and Source Notes</h2>
+<h2>What This Report Has Established</h2><p>Part 1 shows the logic behind the analysis rather than only chasing a final forecast number. I started with a simple growth-based projection, tested its sensitivity, and then moved into measures that better reflect how the resale market works.</p><p>Price per sqm was used because raw resale price is affected by floor area. Million-dollar transactions were studied by share because counts alone can be affected by total transaction volume. Town was used as a practical location proxy because exact amenity distances were not available. Remaining lease was included because HDB flats have finite 99-year leases.</p><p>Overall, Part 1 answers the three supporting questions at a descriptive level and creates the foundation for <a href="HDB%20Resale%20Prices%20Part%202.html">Part 2</a>. The cleaned annual series can support time-based regression models, while the cleaned transaction-level data can support hedonic regression. The main value of the project is the structured analytical workflow: prepare the data, test a simple baseline, identify its weaknesses, use better measures, and then move into more controlled forecasting.</p><h2>Project Files and Reproducibility</h2><p>The project code, SQL workflow and source notes are available in the <a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast" rel="noopener" target="_blank">GitHub repository</a>. The official HDB resale collection is available on <a href="https://data.gov.sg/collections/189/view" rel="noopener" target="_blank">data.gov.sg</a>. Because the official dataset continues to update, the project repository documents the frozen data version used for this forecast, which was updated as at 20 May 2026 and covered transactions from January 1990 to May 2026.</p><p>For the technical workflow, see the repository folders for <a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast/tree/main/sql" rel="noopener" target="_blank">SQL scripts</a>, <a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast/tree/main/python" rel="noopener" target="_blank">Python scripts</a> and <a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast/blob/main/data/data_source_notes.md" rel="noopener" target="_blank">data source notes</a>.</p><h2>References and Source Notes</h2>
 <div class="table-block"><p class="table-caption">Table 11. References and source notes</p><table class="dataframe"><thead><tr><th>Source area</th><th>How it was used</th><th>Reference</th></tr></thead><tbody><tr><td>HDB resale flat prices collection on data.gov.sg</td><td>Official source for resale transaction records.</td><td><a href="https://data.gov.sg/collections/189/view" rel="noopener" target="_blank">HDB resale flat prices collection</a></td></tr><tr><td>Working file</td><td>SG_HDB_Resale_Prices_Combined copy.xlsx. Working file used for cleaning and analysis.</td><td>Stored with project files.</td></tr><tr><td>Raw data file used for data preparation</td><td>Raw Data Combined.csv. Imported into the database for cleaning and validation.</td><td><a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast/blob/main/data/data_source_notes.md" rel="noopener" target="_blank">Frozen data version notes</a></td></tr><tr><td>Dataset version used</td><td>Updated as at 20 May 2026. Used to define the period covered up to May 2026.</td><td>Version note from working file.</td></tr><tr><td>Consumer Price Index</td><td>Singapore Department of Statistics CPI table. CPI was rebased to 1990 = 100 for this report.</td><td><a href="https://tablebuilder.singstat.gov.sg/table/TS/M213801" rel="noopener" target="_blank">SingStat Consumer Price Index table</a></td></tr><tr><td>Housing policy context</td><td>HDB and government sources were used to summarise major policy and market context. Used only as contextual background, not as causal proof.</td><td><a href="https://www.hdb.gov.sg/" rel="noopener" target="_blank">HDB website</a></td></tr><tr><td>PropNex million-dollar HDB resale article</td><td>Used for the first million-dollar HDB resale background.</td><td><a href="https://www.propnex.com/picks-details/890/million-dollar-hdb-flats-the-new-norm" rel="noopener" target="_blank">PropNex article</a></td></tr><tr><td>SmartWealth million-dollar HDB transaction count</td><td>Used for the note that there were two million-dollar HDB transactions in 2012.</td><td><a href="https://smartwealth.sg/million-dollar-hdb-flats/" rel="noopener" target="_blank">SmartWealth article</a></td></tr><tr><td>HDB short lease 2 ROOM Flexi page</td><td>Used to explain why some short lease 2 ROOM Flexi flats do not enter the open resale market.</td><td><a href="https://www.hdb.gov.sg/buying-a-flat/bto-sbf-and-open-booking-of-flats/finding-a-new-flat/types-of-flats/shortlease-2room-flexi-flat" rel="noopener" target="_blank">HDB short lease 2 ROOM Flexi page</a></td></tr></tbody></table></div>
-</div></body></html>
+</main>
+</body>
+</html>

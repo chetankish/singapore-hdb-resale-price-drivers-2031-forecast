@@ -1,38 +1,221 @@
-<!DOCTYPE html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Singapore HDB Resale Prices: Regression Analysis and 2031 Forecasting</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
 
-<html><head><meta charset="utf-8"/><title>Singapore HDB Resale Price Drivers and 2031 Forecast · Part 2 v13</title><style>body{margin:0;background:#f7f7f4;color:#222}.report{max-width:980px;margin:0 auto;background:#fff;padding:42px 54px;font-family:Georgia,"Times New Roman",serif;line-height:1.58;box-shadow:0 8px 28px rgba(0,0,0,.08)}h1{color:#174f42;font-size:42px;line-height:1.05;margin-bottom:5px}.subtitle{color:#1f6b5b;font-size:25px;font-weight:700;margin-bottom:12px}h2{color:#174f42;font-size:27px;border-top:1px solid #ddd;padding-top:20px;margin-top:38px}h3{color:#174f42;font-size:21px;margin-top:25px}p{font-size:16px;margin-bottom:13px}.chart{margin:22px 0 8px;border:1px solid #e7e7e7;padding:12px;border-radius:10px}.caption{color:#555;font-size:14px;font-style:italic;margin-top:6px}table{width:100%;border-collapse:collapse;margin:14px 0 20px;font-size:14px}th,td{border:1px solid #bdbdbd;padding:8px 9px;vertical-align:top}th{background:#1f6b5b;color:white}.note{background:#fff8df;border-left:4px solid #d0ad36;padding:12px 14px;margin:15px 0}code{background:#f1f1f1;padding:1px 4px;border-radius:3px}@media(max-width:800px){.report{padding:24px 18px}h1{font-size:32px}}
 
-/* Standard figure and table label style: matches Part 1 Figure 1 reference */
-.gtitle {
-  font-family: Georgia, "Times New Roman", serif !important;
-  font-size: 18px !important;
-  font-weight: 700 !important;
-  fill: #444 !important;
+@import url("https://cdn.jsdelivr.net/gh/aaaakshat/cm-web-fonts@latest/fonts.css");
+
+@font-face {
+  font-family: "KaTeX_Main";
+  src: url("https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Main-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
 }
-.caption{display:none !important;}
-.table-caption {
-  font-family: Georgia, "Times New Roman", serif !important;
-  font-size: 18px !important;
-  line-height: 1.25 !important;
-  font-weight: 700 !important;
-  color: #444 !important;
-  margin: 0 0 14px 0 !important;
-  text-align: left !important;
+@font-face {
+  font-family: "KaTeX_Main";
+  src: url("https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Main-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
 }
-.table-block{
-  margin:22px 0 8px;
-  border:1px solid #e7e7e7;
-  padding:12px;
-  border-radius:10px;
-  overflow-x:auto;
-  background:#fff;
+@font-face {
+  font-family: "KaTeX_Main";
+  src: url("https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Main-Italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
 }
-.table-block table{
-  margin:0 !important;
-}
-</style><script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script></head><body><div class="report">
-<h1>Singapore HDB Resale Price Drivers and 2031 Forecast</h1><div class="subtitle">Part 2: Regression Analysis and 2031 Forecasting</div>
-<h2>Introduction</h2><p>After completing Part 1, I had a clearer view of the HDB resale market. The simple projection gave me a useful starting point, but the sensitivity check and segment analysis also showed that resale price is not affected by time alone.</p><p>In Part 2, I use what I learned from Part 1 to look for a better way to forecast HDB resale flat prices. The earlier analysis showed that resale price is not explained by time alone, so the next step is to test how different regression models handle price changes and whether they can give a more useful 2031 estimate.</p><p>To guide the modelling choices, I reviewed common housing price forecasting and property price modelling approaches, then focused on regression-based methods that fit my dataset: linear regression, semi-log regression, time-trend regression, a lagged dependent variable model and hedonic regression. I do not treat these models as a race to find the biggest forecast number. I use them step by step to understand what each model captures, what it misses and how the forecast changes when more information is added.</p><p><b>Model notation note:</b> β1 represents the intercept and u represents the error term. For categorical variables, one reference category is omitted so that the regression can be estimated properly.</p><h2>Project Files and Reproducibility</h2><p>This modelling report should be read together with <a href="HDB_Resale_Prices_Part_1_v28.html">Part 1</a>. The project code, SQL workflow and source notes are available in the <a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast" rel="noopener" target="_blank">GitHub repository</a>. The official HDB resale collection is available on <a href="https://data.gov.sg/collections/189/view" rel="noopener" target="_blank">data.gov.sg</a>. Because the official dataset continues to update, the repository documents the frozen data version used for this forecast.</p><p>The main modelling scripts are <a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast/blob/main/python/02_part2_regression_models.py" rel="noopener" target="_blank"><code>02_part2_regression_models.py</code></a> and <a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast/blob/main/python/03_backtesting_and_diagnostics.py" rel="noopener" target="_blank"><code>03_backtesting_and_diagnostics.py</code></a>.</p>
+
+
+    * { font-family: "Computer Modern Serif", "Latin Modern Roman", "CMU Serif", "KaTeX_Main", "Times New Roman", serif; }
+:root {
+      --text: #111;
+      --muted: #444;
+      --rule: #777;
+      --soft: #ddd;
+      --paper: #ffffff;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: #ffffff;
+      color: var(--text);
+      font-family: "Computer Modern Serif", "Latin Modern Roman", "CMU Serif", "KaTeX_Main", "Times New Roman", serif;
+      font-size: 15.5px;
+      line-height: 1.48;
+    }
+    .paper {
+      max-width: 850px;
+      margin: 0 auto;
+      padding: 86px 72px 70px;
+      background: var(--paper);
+    }
+    .title {
+      text-align: center;
+      font-size: 25px;
+      line-height: 1.18;
+      font-weight: 700;
+      margin: 0 auto 26px;
+      max-width: 760px;
+    }
+    .author, .date {
+      text-align: center;
+      font-size: 16px;
+      margin: 0 0 14px;
+    }
+    .date { margin-bottom: 38px; }
+    .abstract {
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+      padding: 10px 48px 12px;
+      margin: 0 0 30px;
+      font-size: 14px;
+      line-height: 1.38;
+    }
+    .abstract-title {
+      text-align: center;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    h2 {
+      font-size: 22px;
+      line-height: 1.22;
+      margin: 28px 0 14px;
+      padding: 0;
+      border: none;
+      color: #111;
+      font-weight: 700;
+    }
+    h3 {
+      font-size: 18px;
+      line-height: 1.25;
+      margin: 20px 0 9px;
+      color: #111;
+      font-weight: 700;
+    }
+    h4 {
+      font-size: 16px;
+      line-height: 1.25;
+      margin: 18px 0 8px;
+      color: #111;
+      font-weight: 700;
+    }
+    p {
+      font-size: 15.5px;
+      margin: 0 0 12px;
+      color: #111;
+    }
+    .chart {
+      margin: 18px auto 12px;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      max-width: 100%;
+    }
+    .plotly-graph-div {
+      margin-left: auto;
+      margin-right: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px auto 18px;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    th, td {
+      border: none;
+      border-bottom: 1px solid #c8c8c8;
+      padding: 6px 7px;
+      vertical-align: top;
+      color: #111;
+    }
+    th {
+      background: transparent !important;
+      color: #111 !important;
+      font-weight: 700;
+      border-top: 1.4px solid #111;
+      border-bottom: 1px solid #111;
+    }
+    tr:last-child td { border-bottom: 1.4px solid #111; }
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      margin: 10px 0 18px;
+    }
+    .table-wrap table { min-width: 560px; }
+    .note {
+      background: transparent;
+      border-left: 2px solid #777;
+      padding: 8px 12px;
+      margin: 14px 0;
+      font-size: 14px;
+    }
+    code { background: transparent; font-family: "Computer Modern Typewriter", "CMU Typewriter Text", "Courier New", monospace; font-size: 0.96em; padding: 0; }
+    a { color: #111; text-decoration: underline; }
+    .caption, figcaption {
+      font-size: 13px;
+      color: #111;
+      text-align: center;
+      margin-top: 4px;
+    }
+    @media (max-width: 760px) {
+      .paper { padding: 40px 20px 60px; }
+      .title { font-size: 22px; }
+      .abstract { padding: 10px 0 12px; }
+      table { font-size: 12px; }
+    }
+    @media print {
+      body { background: white; }
+      .paper { max-width: none; padding: 0.85in 0.95in; }
+      .chart { break-inside: avoid; }
+      table { break-inside: avoid; }
+    }
+
+    h1, .subtitle { display: none; }
+    .date { display: block; margin-bottom: 38px; }
+    .table-block, .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      margin: 10px 0 18px;
+    }
+    .table-block table, .table-wrap table { min-width: 560px; }
+    .table-caption {
+      text-align: center;
+      font-size: 13px;
+      color: #111;
+      margin: 6px 0 8px;
+    }
+    .source-list {
+      margin: 8px 0 16px;
+      padding-left: 22px;
+    }
+    .source-list li, li {
+      margin-bottom: 6px;
+    }
+    .note strong { font-weight: 700; }
+    .forecast-scale { margin-top: 14px; }
+    @media (max-width: 760px) {
+      .plotly-graph-div { min-height: 360px; }
+    }
+
+</style>
+</head>
+<body>
+<main class="paper">
+  <div class="title">Singapore HDB Resale Prices: Regression Analysis and 2031 Forecasting</div>
+  <div class="author">Chetan</div>
+  <div class="date">July 26, 2026</div>
+  <section class="abstract">
+    <div class="abstract-title">Abstract</div>
+    <div>This report extends the descriptive analysis by testing time-based forecasting models and a hedonic regression model for HDB resale prices. The modelling sequence compares simple trend approaches with more controlled specifications, evaluates fit using metrics such as R-squared, RMSE, MAE and residual patterns, and then produces scenario-based 2031 forecasts. The emphasis is on explaining the modelling choices clearly: why hedonic regression is appropriate for housing data, what it controls for, and how the results should be interpreted as ranges rather than certain future prices.</div>
+  </section>
+  <h2>Part 2</h2>
+<h2>Introduction</h2><p>After completing Part 1, I had a clearer view of the HDB resale market. The simple projection gave me a useful starting point, but the sensitivity check and segment analysis also showed that resale price is not affected by time alone.</p><p>In Part 2, I use what I learned from Part 1 to look for a better way to forecast HDB resale flat prices. The earlier analysis showed that resale price is not explained by time alone, so the next step is to test how different regression models handle price changes and whether they can give a more useful 2031 estimate.</p><p>To guide the modelling choices, I reviewed common housing price forecasting and property price modelling approaches, then focused on regression-based methods that fit my dataset: linear regression, semi-log regression, time-trend regression, a lagged dependent variable model and hedonic regression. I do not treat these models as a race to find the biggest forecast number. I use them step by step to understand what each model captures, what it misses and how the forecast changes when more information is added.</p><p><b>Model notation note:</b> β1 represents the intercept and u represents the error term. For categorical variables, one reference category is omitted so that the regression can be estimated properly.</p><h2>Project Files and Reproducibility</h2><p>This modelling report should be read together with <a href="HDB%20Resale%20Prices%20Part%201.html">Part 1</a>. The project code, SQL workflow and source notes are available in the <a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast" rel="noopener" target="_blank">GitHub repository</a>. The official HDB resale collection is available on <a href="https://data.gov.sg/collections/189/view" rel="noopener" target="_blank">data.gov.sg</a>. Because the official dataset continues to update, the repository documents the frozen data version used for this forecast.</p><p>The main modelling scripts are <a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast/blob/main/python/02_part2_regression_models.py" rel="noopener" target="_blank"><code>02_part2_regression_models.py</code></a> and <a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast/blob/main/python/03_backtesting_and_diagnostics.py" rel="noopener" target="_blank"><code>03_backtesting_and_diagnostics.py</code></a>.</p>
 <h2>Time-Based Regression Models</h2><p>I start with time-based regression models because they are the closest extension of the simple projection in Part 1. Instead of only applying a historical growth rate, these models estimate a relationship between resale price and time. This gives me a clearer baseline before I use models that include flat characteristics.</p><h3>Model 1: Raw Linear Time Trend Regression</h3><p>My first regression is deliberately simple. I use a raw linear time-trend regression because linear regression is a common first step in housing price forecasting: it measures the relationship between price and a chosen factor. In this model, the chosen factor is year, so it also works as a time-trend regression. This helps me check whether annual median HDB resale prices have a clear upward trend over time before I add other housing characteristics.</p><p><code>Price_t = β1 + β2 Year_t + u_t</code></p><div class="chart"><div> <div class="plotly-graph-div" id="96251538-0742-4be4-b2a5-e868d779d683" style="height:440px; width:100%;"></div> <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("96251538-0742-4be4-b2a5-e868d779d683")) {                    Plotly.newPlot(                        "96251538-0742-4be4-b2a5-e868d779d683",                        [{"mode":"lines+markers","name":"Actual annual median","x":{"dtype":"i2","bdata":"xgfHB8gHyQfKB8sHzAfNB84HzwfQB9EH0gfTB9QH1QfWB9cH2AfZB9oH2wfcB90H3gffB+AH4QfiB+MH5AflB+YH5wfoB+kH"},"y":{"dtype":"f8","bdata":"AAAAAICi6UAAAAAAANXrQAAAAAAAQO9AAAAAAIAl+UAAAAAAAI4CQQAAAAAA8wZBAAAAAABGDkEAAAAAQLMRQQAAAAAATA1BAAAAAADPDEEAAAAAwCwNQQAAAABAdwtBAAAAAMA+CkEAAAAAQH0KQQAAAABgSAtBAAAAAEB3C0EAAAAAANULQQAAAACAhA5BAAAAAKCdEkEAAAAAQCQUQQAAAADgVRZBAAAAAEAGGUEAAAAAICkbQQAAAABgxRtBAAAAAICiGUEAAAAAILgYQQAAAABABhlBAAAAAEAGGUEAAAAAAOcYQQAAAAAAahhBAAAAAKDwGUEAAAAA4HodQQAAAACQBSBBAAAAAODIIEEAAAAAYAEiQQAAAABAKiNB"},"type":"scatter"},{"mode":"lines","name":"Raw linear fit","x":[1990,1991,1992,1993,1994,1995,1996,1997,1998,1999,2000,2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025,2026,2027,2028,2029,2030,2031],"y":{"dtype":"f8","bdata":"AN5qyWIq9EAAVXz8H3D3QADLjS\u002fdtfpAAEGfYpr7\u002fUCAW9jKq6AAQQAXYWSKQwJBANLp\u002fWjmA0EAjXKXR4kFQQBI+zAmLAdBgAOEygTPCEGAvgxk43EKQYB5lf3BFAxBADUel6C3DUEA8KYwf1oPQYDVF+WufhBBADPcMR5QEUHAkKB+jSESQUDuZMv88hJBwEspGGzEE0FAqe1k25UUQQAHsrFKZxVBgGR2\u002frk4FkEAwjpLKQoXQcAf\u002f5eY2xdBQH3D5AetGEHA2ocxd34ZQUA4TH7mTxpBAJYQy1UhG0GA89QXxfIbQQBRmWQ0xBxBgK5dsaOVHUFADCL+EmceQcBp5kqCOB9BoGPVy\u002fgEIEGAkjdysG0gQUDBmRho1iBBAPD7vh8\u002fIUHAHl5l16chQaBNwAuPECJBYHwiskZ5IkEkq4RY\u002fuEiQe3Z5v61SiNB"},"type":"scatter"},{"mode":"markers","name":"2031 forecast","x":[2031],"y":[632154.9978550054],"type":"scatter"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"title":{"text":"Figure 1. Model 1 raw linear time-trend regression","x":0.01},"yaxis":{"title":{"text":"Median resale price"},"tickprefix":"S$","tickformat":",.0f"},"margin":{"l":60,"r":25,"t":64,"b":48},"font":{"size":13},"xaxis":{"title":{"text":"Year"}},"height":440},                        {"displaylogo": false, "responsive": true}                    )                };            </script> </div></div><p>The fitted line rises steadily, but Figure 1 shows that the resale market did not move in a simple straight line. The model has a high R squared of 0.896, the year coefficient is statistically significant with p &lt; 0.001, and the t statistic is 17.073. However, the 2031 forecast is only S$632,155, which is barely above the 2025 median price of S$628,000. This tells me that the raw model may be too flat for the recent trend, even though it looks statistically strong in-sample.</p><div class="table-block"><p class="table-caption">Table 1. Model 1 raw linear time-trend regression results</p><table class="dataframe">
 <thead>
 <tr style="text-align: right;">
@@ -613,4 +796,6 @@
 </table></div>
 <h2>Final 2031 Forecast Summary</h2><p>The overall median forecast and the controlled 4 ROOM forecast answer related but different questions. The overall forecast is based on annual median resale prices across all flat types, towns, sizes and lease profiles. The hedonic forecast is for a specific 93 sqm 4 ROOM Model A flat in selected towns, holding several characteristics constant. This is why the hedonic town forecasts can be much higher than the overall median range.</p><div class="note"><strong>Final forecast interpretation.</strong> Overall median resale prices in 2031 are best interpreted as a scenario range rather than a point forecast. The time-based models and Part 1 baseline suggest a broad nominal range of about S$630,000 to S$960,000, with a more practical range of about S$700,000 to S$960,000 after downweighting the raw linear model. Separately, the hedonic model shows that a controlled 93 sqm 4 ROOM Model A flat could vary substantially by town, from about S$909,795 in Woodlands to about S$1,394,254 in Bukit Merah. These are nominal forecasts, not guaranteed future prices, and the result depends heavily on flat type, town, floor area, remaining lease and market conditions.</div>
 <h2>Stakeholder Implications and Areas to Monitor</h2><p>The main value of this project is not just one 2031 number. The analysis also shows which parts of the resale market stakeholders should monitor more closely.</p><p>First, 4 ROOM flats should be monitored as a key mainstream segment because they are a common family flat type. Second, million-dollar transactions should be tracked by share rather than only by count, because counts can rise simply when total transaction volume rises.</p><p>Third, price per square metre should be used together with total resale price because raw prices are affected by floor area. Fourth, town should be treated as an important location signal, even though the dataset does not include exact distance to MRT stations, schools or amenities.</p><p>Finally, remaining lease should be included in serious resale analysis because HDB flats have finite 99-year leases. Forecasts should also be presented as ranges or scenarios rather than one exact number, because the result depends on modelling assumptions and future market conditions.</p><h2>Limitations and Next Steps</h2><p>The model choices were informed by common housing price forecasting and property price modelling approaches, but I only used methods that fit the available HDB resale dataset and project scope. Methods that require extra macroeconomic data, exact amenity distances, renovation quality or repeated sales tracking were not used here.</p><p>A useful next step would be to test reduced hedonic specifications, such as comparing models with either flat type or floor area, grouping rare flat models, and adding external features such as MRT proximity, interest rates, income growth or housing supply indicators if reliable data is available.</p>
-</div></body></html>
+</main>
+</body>
+</html>
