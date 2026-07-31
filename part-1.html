@@ -1,0 +1,769 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Singapore HDB Resale Prices: Market Context, Data Preparation and Price Drivers</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+
+
+@import url("https://cdn.jsdelivr.net/gh/aaaakshat/cm-web-fonts@latest/fonts.css");
+
+@font-face {
+  font-family: "KaTeX_Main";
+  src: url("https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Main-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: "KaTeX_Main";
+  src: url("https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Main-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: "KaTeX_Main";
+  src: url("https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/fonts/KaTeX_Main-Italic.woff2") format("woff2");
+  font-weight: 400;
+  font-style: italic;
+}
+
+
+    * { font-family: "Computer Modern Serif", "Latin Modern Roman", "CMU Serif", "KaTeX_Main", "Times New Roman", serif; }
+:root {
+      --text: #111;
+      --muted: #444;
+      --rule: #777;
+      --soft: #ddd;
+      --paper: #ffffff;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: #ffffff;
+      color: var(--text);
+      font-family: "Computer Modern Serif", "Latin Modern Roman", "CMU Serif", "KaTeX_Main", "Times New Roman", serif;
+      font-size: 15.5px;
+      line-height: 1.48;
+    }
+    .paper {
+      max-width: 850px;
+      margin: 0 auto;
+      padding: 86px 72px 70px;
+      background: var(--paper);
+    }
+    .title {
+      text-align: center;
+      font-size: 25px;
+      line-height: 1.18;
+      font-weight: 700;
+      margin: 0 auto 26px;
+      max-width: 760px;
+    }
+    .author, .date {
+      text-align: center;
+      font-size: 16px;
+      margin: 0 0 14px;
+    }
+    .date { margin-bottom: 38px; }
+    .abstract {
+      border-top: 1px solid var(--rule);
+      border-bottom: 1px solid var(--rule);
+      padding: 10px 48px 12px;
+      margin: 0 0 30px;
+      font-size: 14px;
+      line-height: 1.38;
+    }
+    .abstract-title {
+      text-align: center;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    h2 {
+      font-size: 22px;
+      line-height: 1.22;
+      margin: 28px 0 14px;
+      padding: 0;
+      border: none;
+      color: #111;
+      font-weight: 700;
+    }
+    h3 {
+      font-size: 18px;
+      line-height: 1.25;
+      margin: 20px 0 9px;
+      color: #111;
+      font-weight: 700;
+    }
+    h4 {
+      font-size: 16px;
+      line-height: 1.25;
+      margin: 18px 0 8px;
+      color: #111;
+      font-weight: 700;
+    }
+    p {
+      font-size: 15.5px;
+      margin: 0 0 12px;
+      color: #111;
+    }
+    .chart {
+      margin: 18px auto 12px;
+      padding: 0;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      max-width: 100%;
+    }
+    .plotly-graph-div {
+      margin-left: auto;
+      margin-right: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px auto 18px;
+      font-size: 13px;
+      line-height: 1.35;
+    }
+    th, td {
+      border: none;
+      border-bottom: 1px solid #c8c8c8;
+      padding: 6px 7px;
+      vertical-align: top;
+      color: #111;
+    }
+    th {
+      background: transparent !important;
+      color: #111 !important;
+      font-weight: 700;
+      border-top: 1.4px solid #111;
+      border-bottom: 1px solid #111;
+    }
+    tr:last-child td { border-bottom: 1.4px solid #111; }
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      margin: 10px 0 18px;
+    }
+    .table-wrap table { min-width: 560px; }
+    .note {
+      background: transparent;
+      border-left: 2px solid #777;
+      padding: 8px 12px;
+      margin: 14px 0;
+      font-size: 14px;
+    }
+    code { background: transparent; font-family: "Computer Modern Typewriter", "CMU Typewriter Text", "Courier New", monospace; font-size: 0.96em; padding: 0; }
+    a { color: #111; text-decoration: underline; }
+    .caption, figcaption {
+      font-size: 13px;
+      color: #111;
+      text-align: center;
+      margin-top: 4px;
+    }
+    @media (max-width: 760px) {
+      .paper { padding: 40px 20px 60px; }
+      .title { font-size: 22px; }
+      .abstract { padding: 10px 0 12px; }
+      table { font-size: 12px; }
+    }
+    @media print {
+      body { background: white; }
+      .paper { max-width: none; padding: 0.85in 0.95in; }
+      .chart { break-inside: avoid; }
+      table { break-inside: avoid; }
+    }
+
+    h1, .subtitle { display: none; }
+    .date { display: block; margin-bottom: 38px; }
+    .table-block, .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      margin: 10px 0 18px;
+    }
+    .table-block table, .table-wrap table { min-width: 560px; }
+    .table-caption {
+      text-align: center;
+      font-size: 13px;
+      color: #111;
+      margin: 6px 0 8px;
+    }
+    .source-list {
+      margin: 8px 0 16px;
+      padding-left: 22px;
+    }
+    .source-list li, li {
+      margin-bottom: 6px;
+    }
+    .note strong { font-weight: 700; }
+    .forecast-scale { margin-top: 14px; }
+    @media (max-width: 760px) {
+      .plotly-graph-div { min-height: 360px; }
+    }
+
+</style>
+</head>
+<body>
+<main class="paper">
+  <div class="title">Singapore HDB Resale Prices: Market Context, Data Preparation and Price Drivers</div>
+  <div class="author">Chetan</div>
+  <div class="date">July 26, 2026</div>
+  <section class="abstract">
+    <div class="abstract-title">Abstract</div>
+    <div>This report examines long-run Singapore HDB resale price movements using official transaction data from 1990 to May 2026. It begins with a transparent baseline projection, then tests how sensitive the 2031 estimate is to the chosen historical starting point. The analysis then explains the data preparation workflow and compares price patterns by flat type, town, floor area, remaining lease and million-dollar transactions. The purpose is to show not only what changed in the resale market, but also why each analytical step was needed before moving into controlled modelling.</div>
+  </section>
+  <h2>Part 1</h2>
+<h2>Introduction</h2><p>As a Singaporean, the idea of owning a home one day is more than just a financial decision. It is a life milestone. In recent years, I kept seeing more news about HDB resale flats crossing the S$1 million mark. This made me wonder what the resale market might look like by the time I reach the stage of buying a home.</p><p>This question connects to my own timeline. I am expecting to graduate in two years, and ideally would like to work for another two to three years before seriously considering a home purchase. This places the possibility of my earliest buying window in about 2031. At first, my question seemed simple: how much might I be looking to pay for an HDB resale flat in 2031?</p><p>However, this personal question also connects to a broader business and policy problem. HDB resale prices do not only matter to individual buyers. They are also important to housing analysts, policymakers, financial institutions and other stakeholders who need to understand where affordability pressure is coming from, which market segments are driving price growth, and what future resale prices could look like under different assumptions.</p><p>Therefore, this project uses HDB resale transaction data to answer both a personal and stakeholder-focused question: <strong>how have HDB resale prices changed across time, flat type, town, floor area and remaining lease, and what does this suggest about resale affordability pressure by 2031?</strong></p><p>To answer this, I break the analysis into three supporting questions:</p><ol><li>Where is resale price pressure coming from?</li><li>Which market segments should stakeholders monitor?</li><li>What could resale prices look like by 2031 under different modelling assumptions?</li></ol><h2>Initial Baseline Projection</h2><p>I began with a simple growth-based projection because it provided an interpretable baseline before applying more controlled models. It gives a rough idea of what 2031 prices could look like if past growth continues, and it also allows me to test how useful a simple approach is before deciding what else needs to be checked.</p><div class="chart"><div> <div class="plotly-graph-div" id="3f299b51-b0eb-4f5c-90bf-a5ffbc04a050" style="height:440px; width:100%;"></div> <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("3f299b51-b0eb-4f5c-90bf-a5ffbc04a050")) {                    Plotly.newPlot(                        "3f299b51-b0eb-4f5c-90bf-a5ffbc04a050",                        [{"mode":"lines+markers","name":"Annual median price","x":{"dtype":"i2","bdata":"xgfHB8gHyQfKB8sHzAfNB84HzwfQB9EH0gfTB9QH1QfWB9cH2AfZB9oH2wfcB90H3gffB+AH4QfiB+MH5AflB+YH5wfoB+kH"},"y":{"dtype":"f8","bdata":"AAAAAICi6UAAAAAAANXrQAAAAAAAQO9AAAAAAIAl+UAAAAAAAI4CQQAAAAAA8wZBAAAAAABGDkEAAAAAQLMRQQAAAAAATA1BAAAAAADPDEEAAAAAwCwNQQAAAABAdwtBAAAAAMA+CkEAAAAAQH0KQQAAAABgSAtBAAAAAEB3C0EAAAAAANULQQAAAACAhA5BAAAAAKCdEkEAAAAAQCQUQQAAAADgVRZBAAAAAEAGGUEAAAAAICkbQQAAAABgxRtBAAAAAICiGUEAAAAAILgYQQAAAABABhlBAAAAAEAGGUEAAAAAAOcYQQAAAAAAahhBAAAAAKDwGUEAAAAA4HodQQAAAACQBSBBAAAAAODIIEEAAAAAYAEiQQAAAABAKiNB"},"type":"scatter"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"title":{"text":"Figure 1. Annual median HDB resale price, 1990 to 2025","x":0.01},"yaxis":{"title":{"text":"Median resale price"},"tickprefix":"S$","tickformat":",.0f"},"margin":{"l":60,"r":25,"t":64,"b":48},"font":{"size":13},"xaxis":{"title":{"text":"Year"}},"height":440},                        {"displaylogo": false, "responsive": true}                    )                };            </script> </div></div><p>The dataset used in this report contains 977,756 HDB resale transactions from January 1990 to May 2026. However, 2026 is incomplete, so I do not use it as a complete year in the main annual trend charts. Including it directly could give readers the wrong impression that the 2026 median resale price is a full year figure. The 2026 median resale price so far is S$630,000, but this only reflects transactions up to May 2026, so it is shown only as context where relevant.</p><p>Figure 1 shows that HDB resale prices increased strongly over the long run, from a median resale price of S$52,500 in 1990 to S$628,000 in 2025. However, the increase was not smooth. The early 1990s show a strong rise, which is consistent with rapid economic growth and strong housing demand during that period. The late 1990s then show a correction, which provides context for the Asian Financial Crisis and weaker market confidence.</p><p>After that, resale prices moved through several cycles. Some periods were flatter or weaker, especially after cooling measures and tighter financing rules affected the resale market. More recently, prices rose sharply after COVID related construction delays, strong resale demand and tight supply conditions. These events do not prove direct causation by themselves, but they help explain why the price trend moved in cycles rather than in a straight line.</p><p>From 1990 to 2025, the annual median HDB resale price increased from S$52,500 to S$628,000. This is a total increase of about 1,096.2%. Annualising this over 35 years gives an annualised growth rate of about 7.35% per year.</p><p><strong>If I use this 7.35% annualised growth rate as a simple mechanical projection and compound the 2025 median resale price of S$628,000 for another six years, the estimated 2031 median resale price would be about S$961,004.</strong></p><p>After calculating this, I realised that the projection is only a mechanical baseline. It assumes that future economic conditions, housing policies, interest rates, income growth, supply, demand and transaction mix remain broadly similar to the long run historical period. That is a strong assumption, so I should not treat this result as the final answer.</p><p>To check whether this rough projection is stable, I look at what happens when the annualised growth rate is calculated from different starting years. This matters because the 1990 starting point may not represent every market condition. If the starting year is unusually low or unusually high, the 2031 estimate can change significantly.</p>
+<p>To test this, I repeat the calculation from different starting years and compare how much the 2031 estimate changes.</p>
+<div class="table-block"><p class="table-caption">Table 1. First simple view across different starting points</p><table class="dataframe">
+<thead>
+<tr style="text-align: right;">
+<th>Start year</th>
+<th>Median price</th>
+<th>Median $/sqm</th>
+<th>Price change to 2025</th>
+<th>Annualised price increase</th>
+<th>$/sqm change to 2025</th>
+<th>Annualised $/sqm increase</th>
+<th>2031 forecast</th></tr>
+</thead>
+<tbody>
+<tr>
+<td>1990</td>
+<td>S$52,500</td>
+<td>S$703</td>
+<td>1096.2%</td>
+<td>7.35%</td>
+<td>825.0%</td>
+<td>6.56%</td>
+<td>S$961,004</td></tr>
+<tr>
+<td>1995</td>
+<td>S$188,000</td>
+<td>S$2,107</td>
+<td>234.0%</td>
+<td>4.10%</td>
+<td>208.5%</td>
+<td>3.83%</td>
+<td>S$799,319</td></tr>
+<tr>
+<td>2000</td>
+<td>S$239,000</td>
+<td>S$2,543</td>
+<td>162.8%</td>
+<td>3.94%</td>
+<td>155.7%</td>
+<td>3.83%</td>
+<td>S$791,871</td></tr>
+<tr>
+<td>2005</td>
+<td>S$225,000</td>
+<td>S$2,426</td>
+<td>179.1%</td>
+<td>5.27%</td>
+<td>168.0%</td>
+<td>5.05%</td>
+<td>S$854,462</td></tr>
+<tr>
+<td>2010</td>
+<td>S$365,944</td>
+<td>S$3,847</td>
+<td>71.6%</td>
+<td>3.67%</td>
+<td>69.0%</td>
+<td>3.56%</td>
+<td>S$779,431</td></tr>
+<tr>
+<td>2015</td>
+<td>S$405,000</td>
+<td>S$4,308</td>
+<td>55.1%</td>
+<td>4.48%</td>
+<td>50.9%</td>
+<td>4.20%</td>
+<td>S$817,076</td></tr>
+<tr>
+<td>2020</td>
+<td>S$425,000</td>
+<td>S$4,356</td>
+<td>47.8%</td>
+<td>8.12%</td>
+<td>49.2%</td>
+<td>8.34%</td>
+<td>S$1,003,332</td></tr>
+<tr>
+<td>2021</td>
+<td>S$483,000</td>
+<td>S$4,916</td>
+<td>30.0%</td>
+<td>6.78%</td>
+<td>32.2%</td>
+<td>7.23%</td>
+<td>S$931,062</td></tr>
+<tr>
+<td>2022</td>
+<td>S$525,000</td>
+<td>S$5,373</td>
+<td>19.6%</td>
+<td>6.15%</td>
+<td>21.0%</td>
+<td>6.55%</td>
+<td>S$898,587</td></tr>
+<tr>
+<td>2023</td>
+<td>S$550,000</td>
+<td>S$5,709</td>
+<td>14.2%</td>
+<td>6.86%</td>
+<td>13.9%</td>
+<td>6.70%</td>
+<td>S$934,868</td></tr>
+<tr>
+<td>2024</td>
+<td>S$590,000</td>
+<td>S$6,098</td>
+<td>6.4%</td>
+<td>6.44%</td>
+<td>6.6%</td>
+<td>6.60%</td>
+<td>S$913,283</td></tr>
+</tbody>
+</table></div><p>Table 1 shows that the 2031 projection is sensitive to the starting year used to calculate annualised growth. If the annualised rate is calculated from 2020, the projected 2031 median resale price is the highest at about S$1,003,332 because this period captures the recent sharp increase in resale prices. On the other hand, using 2010 as the starting year gives the lowest projected 2031 median price, at about S$779,431. Across all starting periods shown, the average 2031 forecast is about S$880,390, while the median forecast is about S$898,587. This gives stakeholders a rough idea of what 2031 prices could look like under different historical growth assumptions, but it also shows why a single forecast number should not be treated as certain.</p><p>The interactive scaled plot below summarises the same spread visually, showing the range, centre and starting periods that produce lower or higher estimates.</p><div class="chart forecast-scale"><div id="forecast_spread_figure2_v21"></div><script>
+if (document.getElementById("forecast_spread_figure2_v21")) {
+    const forecastData = [
+        {start: 2010, value: 779431, y: 0.82},
+        {start: 1995, value: 799319, y: 0.47},
+        {start: 2000, value: 791871, y: -0.82},
+        {start: 2015, value: 817076, y: -0.50},
+        {start: 2005, value: 854462, y: 0.82},
+        {start: 2022, value: 898587, y: -0.82},
+        {start: 2024, value: 913283, y: 0.47},
+        {start: 2021, value: 931062, y: -0.50},
+        {start: 2023, value: 934868, y: 0.82},
+        {start: 1990, value: 961004, y: -0.82},
+        {start: 2020, value: 1003332, y: 0.47}
+    ];
+
+    const currency = value => 'S$' + value.toLocaleString('en-SG');
+
+    const trace = {
+        type: 'scatter',
+        mode: 'markers',
+        x: forecastData.map(d => d.value),
+        y: forecastData.map(() => 0),
+        customdata: forecastData.map(d => [d.start, currency(d.value)]),
+        hovertemplate: 'Start year: %{customdata[0]}<br>2031 forecast: %{customdata[1]}<extra></extra>',
+        marker: {
+            size: 18,
+            color: '#2d7a6b',
+            line: {color: 'white', width: 2.5}
+        },
+        showlegend: false
+    };
+
+    const shapes = [
+        {
+            type: 'line', xref: 'x', yref: 'y',
+            x0: 750000, x1: 1050000, y0: 0, y1: 0,
+            line: {color: '#222', width: 3}
+        },
+        {
+            type: 'line', xref: 'x', yref: 'y',
+            x0: 750000, x1: 750000, y0: -0.06, y1: 0.06,
+            line: {color: '#222', width: 3}
+        },
+        {
+            type: 'line', xref: 'x', yref: 'y',
+            x0: 1050000, x1: 1050000, y0: -0.06, y1: 0.06,
+            line: {color: '#222', width: 3}
+        }
+    ];
+
+    const annotations = [];
+
+    const referenceMarkers = [
+        {label: '−1 SD', value: 804335, shortValue: 'S$804k'},
+        {label: 'Mean', value: 880390, shortValue: 'S$880k'},
+        {label: '+1 SD', value: 956445, shortValue: 'S$956k'},
+        {label: '+2 SD', value: 1032501, shortValue: 'S$1.03m'}
+    ];
+
+    referenceMarkers.forEach(d => {
+        shapes.push({
+            type: 'line', xref: 'x', yref: 'y', layer: 'below',
+            x0: d.value, x1: d.value, y0: -0.92, y1: 0.92,
+            line: {color: 'rgba(60, 60, 60, 0.32)', width: 1.4, dash: 'dot'}
+        });
+
+        annotations.push({
+            x: d.value,
+            y: 0.18,
+            xref: 'x',
+            yref: 'y',
+            showarrow: false,
+            align: 'center',
+            text: '<b>' + d.label + '</b><br>' + d.shortValue,
+            bgcolor: 'rgba(255,255,255,0.92)',
+            bordercolor: 'rgba(120,120,120,0.25)',
+            borderpad: 3,
+            font: {
+                family: 'Computer Modern Serif, Latin Modern Roman, CMU Serif, KaTeX_Main, Times New Roman, serif',
+                size: 12,
+                color: '#444'
+            }
+        });
+    });
+
+    forecastData.forEach(d => {
+        shapes.push({
+            type: 'line', xref: 'x', yref: 'y',
+            x0: d.value, x1: d.value, y0: 0, y1: d.y,
+            line: {color: '#9aa3ab', width: 2, dash: 'dash'}
+        });
+
+        annotations.push({
+            x: d.value,
+            y: d.y + (d.y > 0 ? 0.06 : -0.06),
+            xref: 'x',
+            yref: 'y',
+            showarrow: false,
+            align: 'center',
+            yanchor: d.y > 0 ? 'bottom' : 'top',
+            text: '<b>' + currency(d.value) + '</b><br>' + d.start,
+            font: {
+                family: 'Computer Modern Serif, Latin Modern Roman, CMU Serif, KaTeX_Main, Times New Roman, serif',
+                size: 15,
+                color: '#222'
+            }
+        });
+    });
+
+    const tickvals = [750000, 800000, 850000, 900000, 950000, 1000000, 1050000];
+    const ticktext = ['S$750k', 'S$800k', 'S$850k', 'S$900k', 'S$950k', 'S$1.00m', 'S$1.05m'];
+
+    Plotly.newPlot('forecast_spread_figure2_v21', [trace], {
+        title: {
+            text: 'Figure 2. 2031 forecast spread from different starting years',
+            x: 0.01,
+            xanchor: 'left',
+            font: {
+                family: 'Computer Modern Serif, Latin Modern Roman, CMU Serif, KaTeX_Main, Times New Roman, serif',
+                size: 18,
+                color: '#444'
+            }
+        },
+        height: 600,
+        margin: {l: 70, r: 70, t: 90, b: 60},
+        font: {
+            family: 'Computer Modern Serif, Latin Modern Roman, CMU Serif, KaTeX_Main, Times New Roman, serif',
+            size: 14,
+            color: '#222'
+        },
+        xaxis: {
+            range: [750000, 1050000],
+            tickvals: tickvals,
+            ticktext: ticktext,
+            tickfont: {size: 13, color: '#333'},
+            showgrid: false,
+            zeroline: false,
+            showline: false,
+            fixedrange: true
+        },
+        yaxis: {
+            range: [-1.02, 1.02],
+            visible: false,
+            fixedrange: true
+        },
+        shapes: shapes,
+        annotations: annotations,
+        plot_bgcolor: 'white',
+        paper_bgcolor: 'white',
+        hoverlabel: {
+            bgcolor: 'white',
+            bordercolor: '#2d7a6b',
+            font: {
+                family: 'Computer Modern Serif, Latin Modern Roman, CMU Serif, KaTeX_Main, Times New Roman, serif',
+                size: 13,
+                color: '#222'
+            }
+        }
+    }, {displaylogo: false, displayModeBar: false, responsive: true});
+}
+</script></div><div class="table-block"><p class="table-caption">Table 2. Summary statistics for 2031 forecast estimates</p><table class="dataframe summary-statistics-table"><thead><tr><th>Statistic</th><th>Value</th></tr></thead><tbody><tr><td>Minimum</td><td>S$779,431</td></tr><tr><td>Maximum</td><td>S$1,003,332</td></tr><tr><td>Mean</td><td>S$880,390</td></tr><tr><td>Median</td><td>S$898,587</td></tr><tr><td>Variance</td><td>5,784,370,055</td></tr><tr><td>Standard deviation</td><td>S$76,055</td></tr></tbody></table></div><p>From a stakeholder perspective, this matters because it gives a rough range of what median HDB resale prices could look like by 2031 under different historical growth assumptions. Instead of relying on one exact figure, stakeholders can see that the projected outcome depends heavily on the starting period used, which affects how aggressive or conservative the forecast becomes. This makes the exercise useful as an early baseline, while also showing why the report needs to look more closely at the market segments behind resale price movements.</p><p>This answers the third supporting question at a baseline level. Under different historical growth assumptions, the 2031 estimate changes noticeably depending on the starting year used. This shows that a single simple projection is not enough, and that the 2031 forecast should be treated as a range of possible outcomes rather than one certain number.</p>
+<h2>Understanding HDB Flat Types and Flat Models</h2>
+<p>Before comparing the market segments, I first need to clarify two terms used in the dataset. HDB flat type and flat model are not the same. Flat type is the broad size category, while flat model describes the design or generation label used in the resale records. This distinction matters because the same flat type can appear under different flat models.</p>
+<div class="table-block"><p class="table-caption">Table 3. HDB flat type categories used in the report</p><table class="dataframe">
+<thead>
+<tr style="text-align: right;">
+<th>Flat type</th>
+<th>How it should be read</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2 ROOM / 2 ROOM Flexi</td>
+<td>Smaller flats usually suited to singles, seniors or smaller households.</td>
+</tr>
+<tr>
+<td>3 ROOM</td>
+<td>Compact family flat category. Lower raw price does not always mean lower price per sqm.</td>
+</tr>
+<tr>
+<td>4 ROOM</td>
+<td>A common family flat category and the main benchmark used later in the report.</td>
+</tr>
+<tr>
+<td>5 ROOM</td>
+<td>Larger family flat category. Raw prices are usually higher partly because the units are larger.</td>
+</tr>
+<tr>
+<td>Executive</td>
+<td>Large flat category. It can have high raw prices, but price per sqm must still be checked.</td>
+</tr>
+</tbody>
+</table></div><p>The flat_model column gives more detail about the design or layout category of the flat. This is different from flat_type. For example, two flats can both be 4 ROOM flats, but they may have different models, layouts, floor areas or design periods. This matters because flat model can affect resale price together with flat type, town, floor area and remaining lease.</p><div class="table-block"><p class="table-caption">Table 4. Common HDB flat model labels used in the resale data</p><table><tr><th>Flat model</th><th>How to explain it in the report</th></tr><tr><td>Improved</td><td>An older and common resale flat model label. It should be treated as a design or generation category, not a quality score.</td></tr><tr><td>New Generation</td><td>An older model category commonly seen in mature towns and older estates.</td></tr><tr><td>Model A</td><td>A common model label with layouts that differ from older designs. It is useful for controlled comparison because it appears often in the data.</td></tr><tr><td>Apartment</td><td>A larger model label seen in some resale records. It should be compared alongside flat type and floor area.</td></tr><tr><td>Maisonette</td><td>A larger two level HDB flat in the resale market, often priced differently because of layout and scarcity.</td></tr><tr><td>Premium Apartment</td><td>A model label that may reflect newer design and finishing packages in some periods. It should not automatically be treated as larger.</td></tr><tr><td>DBSS</td><td>Design, Build and Sell Scheme flats were built by private developers and often have distinctive development features.</td></tr></table></div><p>The main point is that flat_model helps capture differences that are not fully explained by flat_type alone. However, some flat model labels overlap with flat type, floor area and flat age, so individual flat model effects should be interpreted carefully in later modelling work.</p>
+<h2>Data Integrity and Assumptions</h2>
+<p>The official HDB data collection was not provided as one single file. Instead, the collection is split into five historical CSV files covering different time periods. It is also important to note that the data before March 2012 are based on resale approval date, while records from March 2012 onwards are based on resale registration date. In this report, I treat the month column as the transaction period, while noting this as a data consistency limitation.</p>
+<div class="table-block"><p class="table-caption">Table 5. HDB resale data source coverage by period</p><table class="dataframe report-table">
+<thead>
+<tr style="text-align: right;">
+<th>Source period in workbook</th>
+<th>Transactions</th>
+<th>First month</th>
+<th>Last month</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1990-1999</td>
+<td>287,196</td>
+<td>1990-01</td>
+<td>1999-12</td>
+</tr>
+<tr>
+<td>2000-2012</td>
+<td>369,651</td>
+<td>2000-01</td>
+<td>2012-02</td>
+</tr>
+<tr>
+<td>2012-2014</td>
+<td>52,203</td>
+<td>2012-03</td>
+<td>2014-12</td>
+</tr>
+<tr>
+<td>2015-2016</td>
+<td>37,153</td>
+<td>2015-01</td>
+<td>2016-12</td>
+</tr>
+<tr>
+<td>2017+</td>
+<td>231,553</td>
+<td>2017-01</td>
+<td>2026-05</td>
+</tr>
+</tbody>
+</table></div>
+<p>When inspecting the files, I noticed that the column structure was not fully consistent across all periods. Some newer files had additional columns that older files did not have. One important example was remaining lease, which was missing from older records.</p>
+<p>This mattered because remaining lease is an important factor in resale value. Most HDB flats are sold on 99-year leases, so for older records where remaining lease was missing, I estimated it using the transaction year and the lease commencement year with SQL.</p>
+<h2>Data Preparation and SQL Workflow</h2><p>Before modelling, I first standardised the five official HDB resale datasets into one transaction-level dataset. This was necessary because the source files covered different periods and did not contain fully identical columns.</p><p>I used SQL to combine the various files, clean the data and standardise key fields so that price trends could be compared consistently across time, flat type, town and remaining lease.</p><p>If the raw files are combined without checking the structure, missing values or inconsistent fields, the later charts and forecasts may reflect data issues instead of real market patterns.</p><div class="table-block"><p class="table-caption">Table 6. Data preparation and SQL workflow</p><table class="dataframe report-table"><thead><tr><th>Workflow stage</th><th>What was checked or created</th><th>Why it matters</th></tr></thead><tbody><tr><td>Source coverage checks</td><td>Checked row counts, source file coverage and the date range from January 1990 to May 2026.</td><td>Confirms that the combined dataset covers the intended period and that 2026 should be treated as incomplete.</td></tr><tr><td>Data integrity checks</td><td>Checked for missing values, duplicate rows, invalid resale prices, invalid floor areas, inconsistent categories and remaining lease issues.</td><td>Reduces the risk of drawing insights from corrupted, incomplete or wrongly formatted records.</td></tr><tr><td>Standardisation</td><td>Standardised key fields such as town, flat type, flat model, transaction year, floor area and resale price.</td><td>Allows the same variables to be compared consistently across historical files.</td></tr><tr><td>Feature engineering</td><td>Created analysis fields such as price per sqm, remaining lease years and million-dollar transaction flag.</td><td>Turns raw transactions into variables that directly support market segmentation and forecasting.</td></tr><tr><td>Analysis outputs</td><td>Prepared annual medians, transaction volumes and segment views by flat type, town and remaining lease.</td><td>Creates the clean outputs used later for charts, business insights and modelling.</td></tr></tbody></table></div><p>This cleaning step is therefore not just a technical task. It directly affects the quality of the business insight. Once the dataset is standardised, price movements can be compared more fairly across time, flat type, town, floor area and remaining lease.</p><p>The detailed SQL workflow is organised in the <a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast" rel="noopener" target="_blank">project GitHub repository</a> rather than embedded inside the main report. The scripts are split into <a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast/blob/main/sql/01_data_checks.sql" rel="noopener" target="_blank"><code>01_data_checks.sql</code></a>, <a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast/blob/main/sql/02_cleaning_and_features.sql" rel="noopener" target="_blank"><code>02_cleaning_and_features.sql</code></a>, <a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast/blob/main/sql/03_part1_analysis_outputs.sql" rel="noopener" target="_blank"><code>03_part1_analysis_outputs.sql</code></a> and <a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast/blob/main/sql/04_segment_analysis.sql" rel="noopener" target="_blank"><code>04_segment_analysis.sql</code></a>. This keeps the report focused on findings while still allowing recruiters or reviewers to inspect the technical workflow separately.</p><p>The charts are kept interactive in the HTML version so readers can hover over the values and inspect the exact year, price, transaction count or percentage. This gives more information than a static chart while keeping the report readable.</p><h3>Baseline Forecasting Assumptions</h3>
+<p>For the forecast, I use a baseline scenario after preparing the data. This means I assume that the main conditions affecting HDB resale prices remain broadly similar to recent years. These assumptions make the forecast easier to interpret.</p>
+<p><strong>1. Economic conditions:</strong> I assume that Singapore economy remains stable, with no major recession or financial crisis.</p><p><strong>2. Interest rates:</strong> I assume that mortgage rates remain within a reasonable range and do not rise sharply.</p><p><strong>3. Income growth:</strong> I assume that household incomes continue to grow gradually.</p><p><strong>4. Inflation:</strong> I assume that inflation remains moderate and does not create a major affordability shock.</p><p><strong>5. Housing policy:</strong> I assume that HDB resale rules, grants, CPF usage and loan limits remain broadly similar.</p><p><strong>6. Housing supply:</strong> I assume that BTO supply, resale supply and the number of flats reaching MOP remain broadly similar to recent years.</p><p><strong>7. Buyer demand:</strong> I assume that demand from eligible resale buyers remains stable.</p><p><strong>8. Transaction mix:</strong> I assume that the mix of flats sold remains broadly similar across flat type, town, age and size.</p><p><strong>9. External shocks:</strong> I assume that there is no major external shock, such as another pandemic, global financial crisis or sudden supply disruption.</p>
+<h2>Market Overview: What Changed Over Time?</h2>
+<p>To properly understand and forecast HDB resale prices, I need to understand what factors may be affecting them. After the simple projection, I check whether the market movement can be explained by one broad trend or whether different measures reveal different patterns. Raw price shows what buyers paid. Price per square metre adjusts for flat size. Transaction volume shows market activity. Annual growth highlights unusually strong or weak years. Million-dollar transactions connect the data back to the public affordability debate. Each measure is used because the previous single measure is not enough on its own.</p>
+<div class="chart"><div> <div class="plotly-graph-div" id="dbadb401-f51a-4dc0-aeea-2c8196d4c558" style="height:440px; width:100%;"></div> <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("dbadb401-f51a-4dc0-aeea-2c8196d4c558")) {                    Plotly.newPlot(                        "dbadb401-f51a-4dc0-aeea-2c8196d4c558",                        [{"mode":"lines","name":"Median price index","x":{"dtype":"i2","bdata":"xgfHB8gHyQfKB8sHzAfNB84HzwfQB9EH0gfTB9QH1QfWB9cH2AfZB9oH2wfcB90H3gffB+AH4QfiB+MH5AflB+YH5wfoB+kH"},"y":{"dtype":"f8","bdata":"AAAAAAAAWUBJkiRJkiRbQJ\u002fneZ7neV5AYRiGYRiGaECGYRiGYRhyQBmGYRiGYXZAYhiGYRiGfUAxDMMwDEOBQCRJkiRJknxAhmEYhmEYfEA9z\u002fM8z3N8QJIkSZIkyXpAhmEYhmGYeUBWVVVVVdV5QLdt27Ztm3pAkiRJkiTJekBJkiRJkiR7QDEMwzAMw31Aep7neZ4ngkBJkiRJkqSDQFJ9Ox5KyIVAep7neZ5niEDP8zzP83yKQFVVVVVVFYtAAAAAAAAAiUC3bdu2bRuIQHqe53meZ4hAep7neZ5niECSJEmSJEmIQPM8z\u002fM8z4dAwzAMwzBMiUD\u002f\u002f\u002f\u002f\u002f\u002f7+MQAAAAAAAQI9A6Hme53lekEDzPM\u002fzPI+RQAzDMAzDsJJA"},"type":"scatter"},{"mode":"lines","name":"Median $\u002fsqm index","x":{"dtype":"i2","bdata":"xgfHB8gHyQfKB8sHzAfNB84HzwfQB9EH0gfTB9QH1QfWB9cH2AfZB9oH2wfcB90H3gffB+AH4QfiB+MH5AflB+YH5wfoB+kH"},"y":{"dtype":"f8","bdata":"AAAAAAAAWUAuFuSV0OdZQPavScTpsFxA8sx5RyIPZ0BMAcZzd+htQGs8DEADvXJAYtXlfA2WeUD7yupd8oB7QCWmIfDIn3ZAf314aTy1dUBKbIJyFZ12QOP7DLyF6nRAXL7lW75FdECf79OhgiJ1QGGfQsobB3ZASK\u002fdrzqTdUAZZ1MYZ3N1QFf2OaQm6HZAiZ3YiR02fEA0OZMzOVN+QLh8y7d8G4FAkDlKt69cg0DXjtbqd+iEQEZMF8QHvIVAAAAAAABQhEAMOONaJCiDQIuYn3evHYNAI1r2OMEKg0AXx5gCjLeCQG+hKuUDkoJA7+u+7uteg0DIwGrvb9yFQK5+h1Ub5YdAB1ACaEJjiUDJ6bdT\u002fR2LQAAAAAAA6IxA"},"type":"scatter"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"title":{"text":"Figure 3. Indexed resale price and price per sqm, 1990 = 100","x":0.01},"margin":{"l":60,"r":25,"t":64,"b":48},"font":{"size":13},"xaxis":{"title":{"text":"Year"}},"yaxis":{"title":{"text":"Index, 1990 = 100"}},"height":440},                        {"displaylogo": false, "responsive": true}                    )                };            </script> </div></div>
+<p>By 2025, the median resale price index had risen to about 1196. The median price per square metre index rose to about 925. The gap between the two lines suggests that total resale price and price per square metre did not increase at the same rate, so price growth cannot be understood from time alone.</p>
+<div class="chart"><div> <div class="plotly-graph-div" id="1d9d8268-6488-4a67-bfbf-3a05725fdc7f" style="height:440px; width:100%;"></div> <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("1d9d8268-6488-4a67-bfbf-3a05725fdc7f")) {                    Plotly.newPlot(                        "1d9d8268-6488-4a67-bfbf-3a05725fdc7f",                        [{"mode":"lines+markers","name":"Median $\u002fsqm","x":{"dtype":"i2","bdata":"xgfHB8gHyQfKB8sHzAfNB84HzwfQB9EH0gfTB9QH1QfWB9cH2AfZB9oH2wfcB90H3gffB+AH4QfiB+MH5AflB+YH5wfoB+kH"},"y":{"dtype":"f8","bdata":"WjeYIp\u002f1hUBLzssiPsGGQHTOOeecM4lAE9pLaC9BlEBURmVURkWaQFAglZyXdaBAly1btmx5pkCKndiJnSioQNsYmu5g36NAJ3VfHlsRo0BB\u002fqKKAd2jQPVLv\u002fRLX6JA6ZWx\u002fY7OoUBRYNKpeZCiQNzsF2JFWaNA\u002fWyxMnzzokCIh4eHh9eiQJ9DaoLxHqRAAAAAAMDHqEAxDMMwDKOqQNvv6JWxDa5AntiJndgBsUBB5ewWfl2yQOrJ+O1SF7NA+awbTJHXsUA7sRM7sdOwQL8aE+mByrBAazrmEuG5sECNyqiMynCwQP3SL\u002f3ST7BAPc\u002fzPM8DsUC9hvIayjOzQG\u002fhV2Mi\u002fbRAfIsrFs9MtkDWI0SLsdG3QAAAAAAAZLlA"},"type":"scatter"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"title":{"text":"Figure 4. Median resale price per square metre, 1990 to 2025","x":0.01},"yaxis":{"title":{"text":"Median price per sqm"},"tickprefix":"S$","tickformat":",.0f"},"margin":{"l":60,"r":25,"t":64,"b":48},"font":{"size":13},"xaxis":{"title":{"text":"Year"}},"height":440},                        {"displaylogo": false, "responsive": true}                    )                };            </script> </div></div>
+<p>Figure 4 shows actual median price per square metre rather than an index. It rose from about S$703 in 1990 to S$6,500 in 2025, confirming that the long-term increase remains clear even after adjusting for floor area. This is why price per sqm is used alongside raw resale price: it helps compare flats more fairly when floor area differs.</p>
+<div class="chart"><div> <div class="plotly-graph-div" id="7d9f7f21-bba2-4a31-8c38-f47cbbbd9fb5" style="height:440px; width:100%;"></div> <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("7d9f7f21-bba2-4a31-8c38-f47cbbbd9fb5")) {                    Plotly.newPlot(                        "7d9f7f21-bba2-4a31-8c38-f47cbbbd9fb5",                        [{"name":"Transactions","x":{"dtype":"i2","bdata":"xgfHB8gHyQfKB8sHzAfNB84HzwfQB9EH0gfTB9QH1QfWB9cH2AfZB9oH2wfcB90H3gffB+AH4QfiB+MH5AflB+YH5wfoB+kH"},"y":{"dtype":"i4","bdata":"2TAAADcyAACnOAAAxEYAAAVnAACZagAAZ4gAAA98AACXxwAAtuEAAC6IAACnlAAAAo0AAEtxAAC4cQAAXXUAACNrAABmaQAAfmoAABJ3AAAmiAAACVcAAJ5aAADhPgAA4D4AAHRFAACtSwAAHVAAADlUAACqVgAAJVsAAJ9xAABgaAAAmmQAALhsAAD+YQAA"},"type":"bar"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"title":{"text":"Figure 5. Annual resale transaction volume, 1990 to 2025","x":0.01},"margin":{"l":60,"r":25,"t":64,"b":48},"font":{"size":13},"xaxis":{"title":{"text":"Year"}},"yaxis":{"title":{"text":"Transactions"}},"height":440},                        {"displaylogo": false, "responsive": true}                    )                };            </script> </div></div>
+<p>Transaction volume helps show how active the resale market was and can also highlight unusual years. The late 1990s had very high activity, while some later periods were quieter. These movements provide market context and should not be interpreted as causal proof on their own.</p>
+<div class="chart"><div> <div class="plotly-graph-div" id="4931679f-b444-4f44-a092-8d04fc6336a0" style="height:440px; width:100%;"></div> <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("4931679f-b444-4f44-a092-8d04fc6336a0")) {                    Plotly.newPlot(                        "4931679f-b444-4f44-a092-8d04fc6336a0",                        [{"name":"Annual change","x":{"dtype":"i2","bdata":"xwfIB8kHygfLB8wHzQfOB88H0AfRB9IH0wfUB9UH1gfXB9gH2QfaB9sH3AfdB94H3wfgB+EH4gfjB+QH5QfmB+cH6AfpBw=="},"y":{"dtype":"f8","bdata":"uMWCvBL6DEB8BRZYYIElQO0ltJfQXk5AqDbYXqSzPUBwD4VvYU45QEAhtjqvRUJAq1\u002f6pV\u002f6HUDGrna+y70xwCtjfxrgMhDA\u002f8+ZViCwEEDkIlkpuQYewFc9Oop3ngjAQY2ZUf8DEUBFcfLQeuYQQBjXlzF7cADAKDHe7Xpw4r+KbrliwiYbQIg0SIM0KDdAJ7KGezH4HUB8eI3MLKcpQOb9MXz1WypAQ8CcRnLwH0CQadEd754PQBbJbVKWKxrAZOusZCDCFsBgfjvHx0rLvwiDe+30wdi\u002fHuXH0YRP+7+osYnOtRDpv24tU6GePRFAl9l51jy2KUDMUYIIcJsiQHA6zUU2\u002fRhA7DE8Yn8\u002fG0CqaUjsBmQaQA=="},"type":"bar"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"title":{"text":"Figure 6. Annual change in median price per sqm","x":0.01},"yaxis":{"title":{"text":"Annual change"},"ticksuffix":"%"},"margin":{"l":60,"r":25,"t":64,"b":48},"font":{"size":13},"xaxis":{"title":{"text":"Year"}},"height":440},                        {"displaylogo": false, "responsive": true}                    )                };            </script> </div></div>
+<p>Annual growth shows which years were unusually strong or weak. The sharp movements around the 1990s and later correction periods provide context for why a simple straight line forecast may not be sufficient.</p>
+<h2>Market Events and Policy Context</h2>
+<p>This table summarises major housing market events, policy changes and external shocks that provide context for the price and transaction movements shown in the charts.</p>
+<div class="table-block"><p class="table-caption">Table 7. Market events and policy context</p><table class="dataframe">
+<thead>
+<tr style="text-align: right;">
+<th>Year or period</th>
+<th>Context for this report</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Early 1990s</td>
+<td>Strong economic growth and rising housing demand provide context for rapid price increases.</td>
+</tr>
+<tr>
+<td>1994</td>
+<td>CPF Housing Grant Scheme introduced for eligible resale buyers, which may have affected affordability and demand.</td>
+</tr>
+<tr>
+<td>1995</td>
+<td>Executive Condominiums introduced as another housing option between public and private housing.</td>
+</tr>
+<tr>
+<td>1997 to 1998</td>
+<td>Asian Financial Crisis provides context for weaker market conditions and the sharp fall in price per sqm in 1998.</td>
+</tr>
+<tr>
+<td>2001 onwards</td>
+<td>Build To Order system introduced and became central to new HDB supply planning.</td>
+</tr>
+<tr>
+<td>2010s</td>
+<td>Cooling measures, loan limits and policy changes could have affected resale demand and affordability.</td>
+</tr>
+<tr>
+<td>2020 to 2022</td>
+<td>COVID-19 and BTO construction delays may have contributed to stronger resale demand.</td>
+</tr>
+<tr>
+<td>2024 to 2025</td>
+<td>Million dollar resale transactions became more common, but still remained a minority of overall transactions.</td>
+</tr>
+</tbody>
+</table></div>
+<div class="chart"><div> <div class="plotly-graph-div" id="daa487b2-4001-492a-93a8-3f977510b9e2" style="height:440px; width:100%;"></div> <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("daa487b2-4001-492a-93a8-3f977510b9e2")) {                    Plotly.newPlot(                        "daa487b2-4001-492a-93a8-3f977510b9e2",                        [{"name":"Transactions \u003e= S$1m","x":{"dtype":"i2","bdata":"xgfHB8gHyQfKB8sHzAfNB84HzwfQB9EH0gfTB9QH1QfWB9cH2AfZB9oH2wfcB90H3gffB+AH4QfiB+MH5AflB+YH5wfoB+kH"},"y":{"dtype":"i2","bdata":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAMAAgAMABQALgBHAEAAUgADAXEB1QELBDkG"},"type":"bar"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"title":{"text":"Figure 7. Number of resale transactions at S$1 million or more","x":0.01},"margin":{"l":60,"r":25,"t":64,"b":48},"font":{"size":13},"xaxis":{"title":{"text":"Year"}},"yaxis":{"title":{"text":"Count"}},"height":440},                        {"displaylogo": false, "responsive": true}                    )                };            </script> </div></div>
+<div class="chart"><div> <div class="plotly-graph-div" id="3c670a05-4a74-4e91-8c5e-3390bd682223" style="height:440px; width:100%;"></div> <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("3c670a05-4a74-4e91-8c5e-3390bd682223")) {                    Plotly.newPlot(                        "3c670a05-4a74-4e91-8c5e-3390bd682223",                        [{"mode":"lines+markers","name":"Share","x":{"dtype":"i2","bdata":"xgfHB8gHyQfKB8sHzAfNB84HzwfQB9EH0gfTB9QH1QfWB9cH2AfZB9oH2wfcB90H3gffB+AH4QfiB+MH5AflB+YH5wfoB+kH"},"y":{"dtype":"f8","bdata":"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADEjAiHaiBP50uLceUFZM\u002fdP3iToNyiT9SBDmKIEexP0mP2XC0bbo\u002fyk3IxZe1zD8YoxgNORPVP2T3oL1LdtI\u002fs5v9UeN91j9VBGyRa37sP7Gr8OWGGPY\u002fIA0c8SAj\u002fT+Cz2RK+78NQJgxfiePZhlA"},"type":"scatter"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"title":{"text":"Figure 8. Share of resale transactions at S$1 million or more","x":0.01},"yaxis":{"title":{"text":"Share of transactions"},"ticksuffix":"%"},"margin":{"l":60,"r":25,"t":64,"b":48},"font":{"size":13},"xaxis":{"title":{"text":"Year"}},"height":440},                        {"displaylogo": false, "responsive": true}                    )                };            </script> </div></div>
+<p>The count of transactions at S$1 million or more shows how often very high resale prices appeared. However, count alone can be misleading because total transaction volume changes by year. The share is more useful because it shows whether million-dollar flats are becoming more common within the resale market. In 2025, resale transactions at S$1 million or more formed 6.35% of all 2025 resale transactions in the workbook.</p><p>The first HDB resale flat to reach the million-dollar mark was not from Pinnacle@Duxton, which many people may assume because Pinnacle@Duxton is now strongly associated with high value resale flats. The first million-dollar HDB resale happened in 2012 at 149 Mei Ling Street in Queenstown, where a 150 sqm executive apartment was sold for S$1 million.</p><p>This is notable because HDB flats are public housing and are generally expected to remain affordable for ordinary households. However, the transaction also shows that million-dollar resale prices are usually not random. They tend to involve special combinations of location, flat size, flat type, rarity, storey level, remaining lease and buyer demand. The second million-dollar HDB resale also happened in 2012, which makes 2012 the starting point of a trend that later became much more visible in the resale market. For stakeholders, the main takeaway is not only that million-dollar flats exist, but that they should be tracked by share and by segment to understand whether high price pressure is spreading beyond a few unusual cases.</p>
+<h2>Inflation and CPI: Did Prices Rise Only Because Everything Became More Expensive?</h2><p>I used CPI because I wanted to separate general inflation from HDB resale specific price growth. If resale prices increased mainly because everything in the economy became more expensive, then the increase would look closer to the CPI increase. However, if HDB resale prices grew much faster than CPI, it suggests that other housing market factors may also be driving the change, such as flat type, town, supply, demand, remaining lease and transaction mix.</p>
+<p>Nominal prices show what buyers paid at the time. However, they do not show whether flats became more expensive after accounting for the general rise in prices across the economy. CPI adjustment does not prove how much of HDB price growth was caused by inflation. It only shows what HDB prices look like after adjusting for general consumer price inflation.</p>
+<div class="table-block"><p class="table-caption">Table 8. CPI comparison and inflation adjusted interpretation</p><table class="dataframe">
+<thead>
+<tr style="text-align: right;">
+<th>Measure</th>
+<th>Value</th>
+<th>Interpretation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CPI index in 1990</td>
+<td>100</td>
+<td>Base year used for comparison.</td>
+</tr>
+<tr>
+<td>CPI index in 2025</td>
+<td>187.2</td>
+<td>General consumer prices were about 1.87 times the 1990 level.</td>
+</tr>
+<tr>
+<td>HDB median price per sqm index in 2025</td>
+<td>925.0</td>
+<td>Median resale value per sqm was about 9.25 times the 1990 level.</td>
+</tr>
+<tr>
+<td>Inflation adjusted median price per sqm in 2025</td>
+<td>S$3,472 in 1990 purchasing power</td>
+<td>After CPI adjustment, the 2025 median remained far above the 1990 median.</td>
+</tr>
+<tr>
+<td>Real HDB price per sqm index in 2025</td>
+<td>494.1</td>
+<td>Real price per sqm was about 4.94 times the 1990 level.</td>
+</tr>
+</tbody>
+</table></div>
+<p>The key conclusion is that resale prices did not merely rise because general prices increased. HDB median price per square metre grew much faster than CPI over the period, so the resale market became more expensive in real terms. For stakeholders, this means resale affordability pressure should be studied through housing market specific drivers such as flat type, location, supply, demand, lease profile and transaction mix, not only through general inflation.</p><p>This answers the first supporting question: resale price pressure is not coming from time alone. It appears across several areas, including higher price per sqm, stronger million-dollar transaction share, differences by flat type, town effects and remaining lease differences.</p>
+<h2>What Drives Price Differences Between HDB Resale Flats?</h2>
+<p>After looking at the overall market trend, the next question is why two HDB flats sold in the same year can have very different prices. This section compares flat type, town and remaining lease because these are practical market segments that stakeholders can monitor. The current dataset does not directly include exact distances to MRT stations, schools, malls or other amenities, so town is used as a broad location proxy.</p>
+<h3>Flat Type: Why Raw Price Can Mislead</h3><div class="chart"><div> <div class="plotly-graph-div" id="229c7bd9-6944-4cd9-bea0-0371ad92cfee" style="height:440px; width:100%;"></div> <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("229c7bd9-6944-4cd9-bea0-0371ad92cfee")) {                    Plotly.newPlot(                        "229c7bd9-6944-4cd9-bea0-0371ad92cfee",                        [{"name":"Share","x":["2 ROOM","3 ROOM","4 ROOM","5 ROOM","EXECUTIVE"],"y":{"dtype":"f8","bdata":"cEhAYqCt9T9AqLZSEJs\u002fQLmmkZLRHENAM7ZoVC0rNUCLcm3M2M8dQA=="},"type":"bar"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"title":{"text":"Figure 9. Share of transactions by flat type, 1990 to 2025","x":0.01},"yaxis":{"title":{"text":"Share of transactions"},"ticksuffix":"%"},"margin":{"l":60,"r":25,"t":64,"b":48},"font":{"size":13},"xaxis":{"title":{"text":"Flat type"}},"height":440},                        {"displaylogo": false, "responsive": true}                    )                };            </script> </div></div><p>Figure 9 shows that 4 ROOM flats make up the largest share of resale transactions. This matters because 4 ROOM flats are a practical benchmark for the mainstream resale market. They are large enough for many families, but usually more affordable than 5 ROOM or executive flats. Their high transaction share likely reflects both supply and demand: there are many 4 ROOM flats in the overall HDB stock, and many buyers are also looking for this flat type in the resale market.</p><p>The low number of 2 ROOM transactions is also not surprising, but it should be interpreted carefully. Figure 9 uses the 2 ROOM resale category in the dataset, so it does not separately isolate every 2 ROOM Flexi arrangement. In general, smaller two room flats serve a narrower buyer group because they are more suitable for singles, seniors or smaller households. Separately, some short lease 2 ROOM Flexi flats are meant mainly for seniors and cannot be sold on the open resale market. This means they do not appear as normal resale supply, which helps explain why small two room flats are much less visible in resale transactions than 4 ROOM flats.</p>
+<div class="chart"><div> <div class="plotly-graph-div" id="1e2b5d0c-8d99-4cbd-b27a-d1f899a62903" style="height:440px; width:100%;"></div> <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("1e2b5d0c-8d99-4cbd-b27a-d1f899a62903")) {                    Plotly.newPlot(                        "1e2b5d0c-8d99-4cbd-b27a-d1f899a62903",                        [{"name":"Median $\u002fsqm","x":["2 ROOM","3 ROOM","4 ROOM","5 ROOM","EXECUTIVE"],"y":{"dtype":"f8","bdata":"VVVVVdVUv0CUui+PrSi5QKKJJppo6rlAF1100UVTuEAcuZEbuWW4QA=="},"type":"bar"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"title":{"text":"Figure 10. Median price per sqm by flat type, 2025","x":0.01},"yaxis":{"title":{"text":"Median price per sqm"},"tickprefix":"S$","tickformat":",.0f"},"margin":{"l":60,"r":25,"t":64,"b":48},"font":{"size":13},"xaxis":{"title":{"text":"Flat type"}},"height":440},                        {"displaylogo": false, "responsive": true}                    )                };            </script> </div></div>
+<div class="table-block"><p class="table-caption">Table 9. 2025 resale price comparison by flat type</p><table class="dataframe">
+<thead>
+<tr style="text-align: right;">
+<th>Flat type</th>
+<th>2025 transactions</th>
+<th>Median resale price</th>
+<th>Median price per sqm</th>
+<th>Share of 2025 transactions</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2 ROOM</td>
+<td>832</td>
+<td>S$368,000</td>
+<td>S$8,021</td>
+<td>3.3%</td>
+</tr>
+<tr>
+<td>3 ROOM</td>
+<td>6151</td>
+<td>S$445,000</td>
+<td>S$6,441</td>
+<td>24.5%</td>
+</tr>
+<tr>
+<td>4 ROOM</td>
+<td>10843</td>
+<td>S$630,000</td>
+<td>S$6,634</td>
+<td>43.2%</td>
+</tr>
+<tr>
+<td>5 ROOM</td>
+<td>5781</td>
+<td>S$736,000</td>
+<td>S$6,227</td>
+<td>23.0%</td>
+</tr>
+<tr>
+<td>EXECUTIVE</td>
+<td>1470</td>
+<td>S$900,888</td>
+<td>S$6,246</td>
+<td>5.9%</td>
+</tr>
+</tbody>
+</table></div><p>Figure 10 shows an interesting result. In theory, 2 ROOM flats may be expected to look cheaper because they are smaller and are often meant to serve lower income households, seniors and singles. However, the chart shows that 2 ROOM flats have the highest median price per square metre.</p><p>This does not mean 2 ROOM flats are the most expensive in total price. Instead, it shows that smaller flats can have higher prices when measured on a per square metre basis. A smaller flat spreads its total price over fewer square metres, so the price per sqm can look high even if the total resale price is lower than larger flat types.</p><p>This result is notable because 2 ROOM flats are usually expected to be more affordable in total price. It would be worth studying further, as it may be affected by flat size, location, lease profile or the specific types of 2 ROOM flats that appear in the resale market. However, this is not the main focus of this report, so I will set this aside for now and focus on the broader price drivers.</p>
+<p>This comparison shows why raw resale price can mislead. Larger flats can have higher total prices because they have more floor area, even when their price per square metre is not the highest. For stakeholders, price per sqm is useful because it separates the price of space from the total price of the unit.</p>
+<h3>Town and Location: Why Area Matters</h3><div class="chart"><div> <div class="plotly-graph-div" id="e2823a0f-eeaf-4df5-b94e-78d039f92bb4" style="height:440px; width:100%;"></div> <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("e2823a0f-eeaf-4df5-b94e-78d039f92bb4")) {                    Plotly.newPlot(                        "e2823a0f-eeaf-4df5-b94e-78d039f92bb4",                        [{"name":"Median $\u002fsqm","orientation":"h","x":{"dtype":"f8","bdata":"qqqqqrqou0CsslwDVdW8QKc3velN37xASu14p2EuvkALWchCFpK+QHy8x3u8yr9AAAAAAAAIwUBYtwLcDFHBQFBQUFDQd8FAUV5DeQ05w0A="},"y":["SERANGOON","MARINE PARADE","PUNGGOL","KALLANG\u002fWHAMPOA","TOA PAYOH","BISHAN","BUKIT MERAH","BUKIT TIMAH","CENTRAL AREA","QUEENSTOWN"],"type":"bar"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"title":{"text":"Figure 11. Highest median price per sqm by town, 2025","x":0.01},"xaxis":{"title":{"text":"Median price per sqm"},"tickprefix":"S$","tickformat":",.0f"},"margin":{"l":60,"r":25,"t":64,"b":48},"font":{"size":13},"height":440},                        {"displaylogo": false, "responsive": true}                    )                };            </script> </div></div>
+<p>Figure 11 shows that flats in central or mature towns tend to have higher median price per square metre. These towns are often more developed and better connected. Since the dataset does not directly measure MRT distance, school proximity or nearby amenities, town is used as a practical location signal. This is a general pattern rather than a rule that applies to every flat, and newer estates such as Punggol can also be sought after because of newer flats and estate development.</p><p>This town comparison also helps explain why some flats can reach unusually high prices. Million-dollar HDB transactions are not random. They are usually linked to special combinations of location, flat size, flat type, storey level, remaining lease and rarity. Therefore, the first million-dollar HDB resale should be understood as an extreme example of these price drivers coming together, rather than as a normal resale transaction.</p>
+<h3>Remaining Lease: Why Age Is Not Just Age</h3><div class="chart"><div> <div class="plotly-graph-div" id="57965524-1809-4062-812c-80b2b8d33d30" style="height:440px; width:100%;"></div> <script type="text/javascript">                window.PLOTLYENV=window.PLOTLYENV || {};                                if (document.getElementById("57965524-1809-4062-812c-80b2b8d33d30")) {                    Plotly.newPlot(                        "57965524-1809-4062-812c-80b2b8d33d30",                        [{"mode":"lines+markers","name":"Modelled value","x":{"dtype":"i1","bdata":"LTdBS1U="},"y":{"dtype":"i4","bdata":"SDQIACTjCACQoAkAwG0KAAZMCwA="},"type":"scatter"}],                        {"template":{"data":{"barpolar":[{"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"barpolar"}],"bar":[{"error_x":{"color":"#2a3f5f"},"error_y":{"color":"#2a3f5f"},"marker":{"line":{"color":"white","width":0.5},"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"bar"}],"carpet":[{"aaxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"baxis":{"endlinecolor":"#2a3f5f","gridcolor":"#C8D4E3","linecolor":"#C8D4E3","minorgridcolor":"#C8D4E3","startlinecolor":"#2a3f5f"},"type":"carpet"}],"choropleth":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"choropleth"}],"contourcarpet":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"contourcarpet"}],"contour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"contour"}],"heatmap":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"heatmap"}],"histogram2dcontour":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2dcontour"}],"histogram2d":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"histogram2d"}],"histogram":[{"marker":{"pattern":{"fillmode":"overlay","size":10,"solidity":0.2}},"type":"histogram"}],"mesh3d":[{"colorbar":{"outlinewidth":0,"ticks":""},"type":"mesh3d"}],"parcoords":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"parcoords"}],"pie":[{"automargin":true,"type":"pie"}],"scatter3d":[{"line":{"colorbar":{"outlinewidth":0,"ticks":""}},"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatter3d"}],"scattercarpet":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattercarpet"}],"scattergeo":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergeo"}],"scattergl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattergl"}],"scattermapbox":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermapbox"}],"scattermap":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scattermap"}],"scatterpolargl":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolargl"}],"scatterpolar":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterpolar"}],"scatter":[{"fillpattern":{"fillmode":"overlay","size":10,"solidity":0.2},"type":"scatter"}],"scatterternary":[{"marker":{"colorbar":{"outlinewidth":0,"ticks":""}},"type":"scatterternary"}],"surface":[{"colorbar":{"outlinewidth":0,"ticks":""},"colorscale":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"type":"surface"}],"table":[{"cells":{"fill":{"color":"#EBF0F8"},"line":{"color":"white"}},"header":{"fill":{"color":"#C8D4E3"},"line":{"color":"white"}},"type":"table"}]},"layout":{"annotationdefaults":{"arrowcolor":"#2a3f5f","arrowhead":0,"arrowwidth":1},"autotypenumbers":"strict","coloraxis":{"colorbar":{"outlinewidth":0,"ticks":""}},"colorscale":{"diverging":[[0,"#8e0152"],[0.1,"#c51b7d"],[0.2,"#de77ae"],[0.3,"#f1b6da"],[0.4,"#fde0ef"],[0.5,"#f7f7f7"],[0.6,"#e6f5d0"],[0.7,"#b8e186"],[0.8,"#7fbc41"],[0.9,"#4d9221"],[1,"#276419"]],"sequential":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]],"sequentialminus":[[0.0,"#0d0887"],[0.1111111111111111,"#46039f"],[0.2222222222222222,"#7201a8"],[0.3333333333333333,"#9c179e"],[0.4444444444444444,"#bd3786"],[0.5555555555555556,"#d8576b"],[0.6666666666666666,"#ed7953"],[0.7777777777777778,"#fb9f3a"],[0.8888888888888888,"#fdca26"],[1.0,"#f0f921"]]},"colorway":["#636efa","#EF553B","#00cc96","#ab63fa","#FFA15A","#19d3f3","#FF6692","#B6E880","#FF97FF","#FECB52"],"font":{"color":"#2a3f5f"},"geo":{"bgcolor":"white","lakecolor":"white","landcolor":"white","showlakes":true,"showland":true,"subunitcolor":"#C8D4E3"},"hoverlabel":{"align":"left"},"hovermode":"closest","mapbox":{"style":"light"},"paper_bgcolor":"white","plot_bgcolor":"white","polar":{"angularaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""},"bgcolor":"white","radialaxis":{"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":""}},"scene":{"xaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"yaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"},"zaxis":{"backgroundcolor":"white","gridcolor":"#DFE8F3","gridwidth":2,"linecolor":"#EBF0F8","showbackground":true,"ticks":"","zerolinecolor":"#EBF0F8"}},"shapedefaults":{"line":{"color":"#2a3f5f"}},"ternary":{"aaxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"baxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""},"bgcolor":"white","caxis":{"gridcolor":"#DFE8F3","linecolor":"#A2B1C6","ticks":""}},"title":{"x":0.05},"xaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2},"yaxis":{"automargin":true,"gridcolor":"#EBF0F8","linecolor":"#EBF0F8","ticks":"","title":{"standoff":15},"zerolinecolor":"#EBF0F8","zerolinewidth":2}}},"title":{"text":"Figure 12. Controlled remaining lease scenario for a comparable 4 ROOM Model A flat","x":0.01},"yaxis":{"title":{"text":"Modelled value"},"tickprefix":"S$","tickformat":",.0f"},"margin":{"l":60,"r":25,"t":64,"b":48},"font":{"size":13},"xaxis":{"title":{"text":"Remaining lease years"}},"height":440},                        {"displaylogo": false, "responsive": true}                    )                };            </script> </div></div>
+<div class="table-block"><p class="table-caption">Table 10. Controlled remaining lease scenario for a comparable 4 ROOM Model A flat</p><table class="dataframe">
+<thead>
+<tr style="text-align: right;">
+<th>Remaining lease</th>
+<th>Modelled value</th>
+<th>Difference vs 75 years</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>45</td>
+<td>S$537,672</td>
+<td>-21.3%</td>
+</tr>
+<tr>
+<td>55</td>
+<td>S$582,436</td>
+<td>-14.8%</td>
+</tr>
+<tr>
+<td>65</td>
+<td>S$630,928</td>
+<td>-7.7%</td>
+</tr>
+<tr>
+<td>75</td>
+<td>S$683,456</td>
+<td>0.0%</td>
+</tr>
+<tr>
+<td>85</td>
+<td>S$740,358</td>
+<td>8.3%</td>
+</tr>
+</tbody>
+</table></div><p>Figure 12 shows that remaining lease still matters even when the flat type, floor area and flat model are kept broadly comparable. This measure is used because HDB flats have finite 99-year leases. Flats with longer remaining leases generally have higher resale values because buyers are paying for a longer period of use. As the remaining lease gets shorter, the flat may become less attractive to some buyers, especially if CPF usage, loan eligibility or long-term holding value becomes a concern.</p><p>This also shows why age should not be ignored when comparing resale prices. Two flats may look similar in size and flat type, but the one with a longer remaining lease can still command a higher price. Therefore, remaining lease should be included in the forecasting model later, rather than relying only on year, town or flat type.</p>
+<p>Remaining lease is important because most HDB flats start with a 99-year lease. A flat with more lease remaining gives buyers a longer housing horizon and may have a wider buyer pool. The controlled example is illustrative, not a final forecast.</p><p>This answers the second supporting question. Based on the segment analysis, stakeholders should monitor 4 ROOM flats as a mainstream resale segment, million-dollar transactions by share, town level price differences and remaining lease bands.</p>
+<h2>What This Report Has Established</h2><p>Part 1 shows the logic behind the analysis rather than only chasing a final forecast number. I started with a simple growth-based projection, tested its sensitivity, and then moved into measures that better reflect how the resale market works.</p><p>Price per sqm was used because raw resale price is affected by floor area. Million-dollar transactions were studied by share because counts alone can be affected by total transaction volume. Town was used as a practical location proxy because exact amenity distances were not available. Remaining lease was included because HDB flats have finite 99-year leases.</p><p>Overall, Part 1 answers the three supporting questions at a descriptive level and creates the foundation for <a href="part-2.html">Part 2</a>. The cleaned annual series can support time-based regression models, while the cleaned transaction-level data can support hedonic regression. The main value of the project is the structured analytical workflow: prepare the data, test a simple baseline, identify its weaknesses, use better measures, and then move into more controlled forecasting.</p><h2>Project Files and Reproducibility</h2><p>The project code, SQL workflow and source notes are available in the <a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast" rel="noopener" target="_blank">GitHub repository</a>. The official HDB resale collection is available on <a href="https://data.gov.sg/collections/189/view" rel="noopener" target="_blank">data.gov.sg</a>. Because the official dataset continues to update, the project repository documents the frozen data version used for this forecast, which was updated as at 20 May 2026 and covered transactions from January 1990 to May 2026.</p><p>For the technical workflow, see the repository folders for <a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast/tree/main/sql" rel="noopener" target="_blank">SQL scripts</a>, <a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast/tree/main/python" rel="noopener" target="_blank">Python scripts</a> and <a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast/blob/main/data/data_source_notes.md" rel="noopener" target="_blank">data source notes</a>.</p><h2>References and Source Notes</h2>
+<div class="table-block"><p class="table-caption">Table 11. References and source notes</p><table class="dataframe"><thead><tr><th>Source area</th><th>How it was used</th><th>Reference</th></tr></thead><tbody><tr><td>HDB resale flat prices collection on data.gov.sg</td><td>Official source for resale transaction records.</td><td><a href="https://data.gov.sg/collections/189/view" rel="noopener" target="_blank">HDB resale flat prices collection</a></td></tr><tr><td>Working file</td><td>SG_HDB_Resale_Prices_Combined copy.xlsx. Working file used for cleaning and analysis.</td><td>Stored with project files.</td></tr><tr><td>Raw data file used for data preparation</td><td>Raw Data Combined.csv. Imported into the database for cleaning and validation.</td><td><a href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast/blob/main/data/data_source_notes.md" rel="noopener" target="_blank">Frozen data version notes</a></td></tr><tr><td>Dataset version used</td><td>Updated as at 20 May 2026. Used to define the period covered up to May 2026.</td><td>Version note from working file.</td></tr><tr><td>Consumer Price Index</td><td>Singapore Department of Statistics CPI table. CPI was rebased to 1990 = 100 for this report.</td><td><a href="https://tablebuilder.singstat.gov.sg/table/TS/M213801" rel="noopener" target="_blank">SingStat Consumer Price Index table</a></td></tr><tr><td>Housing policy context</td><td>HDB and government sources were used to summarise major policy and market context. Used only as contextual background, not as causal proof.</td><td><a href="https://www.hdb.gov.sg/" rel="noopener" target="_blank">HDB website</a></td></tr><tr><td>PropNex million-dollar HDB resale article</td><td>Used for the first million-dollar HDB resale background.</td><td><a href="https://www.propnex.com/picks-details/890/million-dollar-hdb-flats-the-new-norm" rel="noopener" target="_blank">PropNex article</a></td></tr><tr><td>SmartWealth million-dollar HDB transaction count</td><td>Used for the note that there were two million-dollar HDB transactions in 2012.</td><td><a href="https://smartwealth.sg/million-dollar-hdb-flats/" rel="noopener" target="_blank">SmartWealth article</a></td></tr><tr><td>HDB short lease 2 ROOM Flexi page</td><td>Used to explain why some short lease 2 ROOM Flexi flats do not enter the open resale market.</td><td><a href="https://www.hdb.gov.sg/buying-a-flat/bto-sbf-and-open-booking-of-flats/finding-a-new-flat/types-of-flats/shortlease-2room-flexi-flat" rel="noopener" target="_blank">HDB short lease 2 ROOM Flexi page</a></td></tr></tbody></table></div>
+</main>
+</body>
+</html>

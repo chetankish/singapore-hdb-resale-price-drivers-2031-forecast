@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="An end-to-end analysis of Singapore HDB resale price drivers and a 2031 forecast using SQL and Python.">
+  <meta name="theme-color" content="#f7f3ea">
+  <title>Singapore HDB Resale Price Drivers and 2031 Forecast</title>
+  <style>
+    :root {
+      --ink: #17211d;
+      --muted: #59635e;
+      --paper: #f7f3ea;
+      --card: #fffdf8;
+      --green: #0d5b45;
+      --green-dark: #083e30;
+      --line: #d7d1c4;
+      --amber: #c9842d;
+      --shadow: 0 18px 60px rgba(23, 33, 29, 0.09);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behaviour: smooth; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 84% 12%, rgba(201, 132, 45, 0.11), transparent 27rem),
+        linear-gradient(180deg, #fbf8f1 0%, var(--paper) 100%);
+      font-family: Inter, ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    a { color: inherit; }
+
+    .shell {
+      width: min(1120px, calc(100% - 40px));
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 26px 0;
+      gap: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 0.82rem;
+      font-weight: 750;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .mark {
+      display: grid;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      border-radius: 10px;
+      color: white;
+      background: var(--green);
+      font-family: Georgia, serif;
+      font-size: 1.05rem;
+      letter-spacing: 0;
+    }
+
+    .github-link {
+      color: var(--muted);
+      font-size: 0.92rem;
+      font-weight: 650;
+      text-underline-offset: 4px;
+    }
+
+    .hero {
+      padding: 86px 0 70px;
+    }
+
+    .eyebrow {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 20px;
+      color: var(--green);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow::before {
+      width: 34px;
+      height: 2px;
+      background: var(--amber);
+      content: "";
+    }
+
+    h1 {
+      max-width: 900px;
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(3rem, 7.3vw, 6.7rem);
+      font-weight: 500;
+      letter-spacing: -0.055em;
+      line-height: 0.98;
+    }
+
+    .lede {
+      max-width: 750px;
+      margin: 32px 0 0;
+      color: var(--muted);
+      font-size: clamp(1.05rem, 2vw, 1.25rem);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 13px;
+      margin-top: 34px;
+    }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 50px;
+      padding: 0 22px;
+      border: 1px solid var(--green);
+      border-radius: 999px;
+      font-weight: 750;
+      text-decoration: none;
+      transition: transform 160ms ease, background 160ms ease, color 160ms ease;
+    }
+
+    .button:hover { transform: translateY(-2px); }
+    .button:focus-visible { outline: 3px solid rgba(201, 132, 45, 0.45); outline-offset: 3px; }
+    .button.primary { color: white; background: var(--green); }
+    .button.primary:hover { background: var(--green-dark); }
+    .button.secondary { color: var(--green); background: transparent; }
+    .button.secondary:hover { background: rgba(13, 91, 69, 0.06); }
+
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      margin: 0 0 88px;
+      border-block: 1px solid var(--line);
+    }
+
+    .fact {
+      min-height: 116px;
+      padding: 25px 24px;
+      border-right: 1px solid var(--line);
+    }
+
+    .fact:first-child { padding-left: 0; }
+    .fact:last-child { border-right: 0; }
+    .fact strong { display: block; margin-bottom: 6px; font-size: 1.15rem; }
+    .fact span { color: var(--muted); font-size: 0.91rem; }
+
+    .section-heading {
+      display: grid;
+      grid-template-columns: minmax(0, 0.55fr) minmax(0, 1fr);
+      gap: 56px;
+      align-items: end;
+      margin-bottom: 30px;
+    }
+
+    h2 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(2.1rem, 4vw, 3.4rem);
+      font-weight: 500;
+      letter-spacing: -0.035em;
+      line-height: 1.05;
+    }
+
+    .section-heading p { margin: 0; color: var(--muted); }
+
+    .report-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 22px;
+      padding-bottom: 100px;
+    }
+
+    .report-card {
+      position: relative;
+      overflow: hidden;
+      min-height: 405px;
+      padding: 34px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+    }
+
+    .report-card::after {
+      position: absolute;
+      right: -35px;
+      bottom: -58px;
+      width: 170px;
+      height: 170px;
+      border: 28px solid rgba(13, 91, 69, 0.065);
+      border-radius: 50%;
+      content: "";
+    }
+
+    .part {
+      display: inline-flex;
+      margin-bottom: 56px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      color: var(--green);
+      background: rgba(13, 91, 69, 0.08);
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .report-card h3 {
+      max-width: 470px;
+      margin: 0 0 16px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(1.8rem, 3vw, 2.55rem);
+      font-weight: 500;
+      letter-spacing: -0.025em;
+      line-height: 1.08;
+    }
+
+    .report-card p { max-width: 510px; margin: 0; color: var(--muted); }
+
+    .card-link {
+      position: absolute;
+      z-index: 1;
+      bottom: 34px;
+      left: 34px;
+      color: var(--green);
+      font-weight: 800;
+      text-decoration-thickness: 2px;
+      text-underline-offset: 5px;
+    }
+
+    footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 24px;
+      padding: 28px 0 42px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    @media (max-width: 760px) {
+      .shell { width: min(100% - 28px, 1120px); }
+      header { padding-top: 18px; }
+      .brand span:last-child { display: none; }
+      .hero { padding: 58px 0 52px; }
+      .facts { grid-template-columns: repeat(2, 1fr); margin-bottom: 66px; }
+      .fact { min-height: 100px; border-bottom: 1px solid var(--line); }
+      .fact:nth-child(2) { border-right: 0; }
+      .fact:nth-child(3), .fact:nth-child(4) { border-bottom: 0; }
+      .fact:nth-child(3) { padding-left: 0; }
+      .section-heading { grid-template-columns: 1fr; gap: 14px; }
+      .report-grid { grid-template-columns: 1fr; padding-bottom: 72px; }
+      .report-card { min-height: 385px; padding: 27px; }
+      .card-link { left: 27px; bottom: 28px; }
+      footer { flex-direction: column; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behaviour: auto !important; transition: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="brand"><span class="mark">CK</span><span>Data Analytics Portfolio</span></div>
+      <a class="github-link" href="https://github.com/chetankish/singapore-hdb-resale-price-drivers-2031-forecast" target="_blank" rel="noopener">View project code</a>
+    </header>
+
+    <main>
+      <section class="hero" aria-labelledby="project-title">
+        <p class="eyebrow">Singapore housing analysis</p>
+        <h1 id="project-title">HDB resale price drivers and a 2031 forecast</h1>
+        <p class="lede">An end-to-end analysis of Singapore's HDB resale market, combining data preparation, exploratory analysis, regression modelling, backtesting and diagnostics.</p>
+        <div class="actions">
+          <a class="button primary" href="part-1.html">Read Part 1</a>
+          <a class="button secondary" href="part-2.html">Read Part 2</a>
+        </div>
+      </section>
+
+      <section class="facts" aria-label="Project overview">
+        <div class="fact"><strong>1990–2026</strong><span>Transaction coverage through May 2026</span></div>
+        <div class="fact"><strong>SQL</strong><span>Data checks, cleaning and feature engineering</span></div>
+        <div class="fact"><strong>Python</strong><span>Visualisation, modelling and diagnostics</span></div>
+        <div class="fact"><strong>2031</strong><span>Forecast horizon explored in the analysis</span></div>
+      </section>
+
+      <section aria-labelledby="reports-heading">
+        <div class="section-heading">
+          <h2 id="reports-heading">Explore the reports</h2>
+          <p>The project is split into two connected reports. Start with the market context and data workflow, then continue to the modelling and forecast evaluation.</p>
+        </div>
+
+        <div class="report-grid">
+          <article class="report-card">
+            <span class="part">Part 1</span>
+            <h3>Data preparation, market trends and price drivers</h3>
+            <p>Examines the long-run market, price per square metre, town and flat-type differences, remaining lease and the initial forecasting baseline.</p>
+            <a class="card-link" href="part-1.html" aria-label="Read HDB resale report Part 1">Read Part 1 →</a>
+          </article>
+
+          <article class="report-card">
+            <span class="part">Part 2</span>
+            <h3>Regression models and the 2031 forecast</h3>
+            <p>Compares regression-based approaches, evaluates model behaviour through backtesting and diagnostics, and develops the final forecast interpretation.</p>
+            <a class="card-link" href="part-2.html" aria-label="Read HDB resale report Part 2">Read Part 2 →</a>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>Created by Chetan Kishnani</span>
+      <span>Data source: HDB resale transactions via data.gov.sg</span>
+    </footer>
+  </div>
+</body>
+</html>
