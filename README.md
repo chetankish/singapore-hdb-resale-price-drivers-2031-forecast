@@ -1,5 +1,19 @@
 # Singapore HDB Resale Price Drivers and 2031 Forecast
 
+## [View the Interactive Project Website →](https://chetankish.github.io/singapore-hdb-resale-price-drivers-2031-forecast/)
+
+[Read Part 1: Market Context and Price Drivers](https://chetankish.github.io/singapore-hdb-resale-price-drivers-2031-forecast/part-1.html) | [Read Part 2: Regression Analysis and Forecasting](https://chetankish.github.io/singapore-hdb-resale-price-drivers-2031-forecast/part-2.html)
+
+An end-to-end analysis of Singapore's HDB resale market using SQL and Python, covering data preparation, exploratory analysis, regression modelling, backtesting, diagnostics and 2031 forecasting.
+
+### Project at a Glance
+
+- **977,756 transactions** analysed from January 1990 to May 2026
+- **SQL** used for data validation, cleaning, standardisation and feature engineering
+- **Python** used for visualisation, forecasting, regression modelling and diagnostics
+- **Two interactive reports** presenting the analysis from market context through model evaluation
+- **2031 forecast horizon** explored using multiple modelling approaches and assumptions
+
 ## Project Overview
 
 This project analyses Singapore HDB resale flat prices and explores what resale prices could look like by 2031.
@@ -71,9 +85,14 @@ reports/
   HDB Resale Prices Part 1.html
   HDB Resale Prices Part 2.html
 
+index.html
+part-1.html
+part-2.html
 requirements.txt
 README.md
 ```
+
+The root HTML files power the public GitHub Pages website. The `reports/` folder retains the original report filenames used in the repository.
 
 ## Code Workflow
 
@@ -213,7 +232,7 @@ For this reason, the project treats the forecast as a range rather than one exac
 
 ## Current Status
 
-The SQL workflow, Python workflow, frozen source data notes and reviewed HTML reports have been added to the repository.
+The SQL workflow, Python workflow, frozen source data notes and reviewed HTML reports have been added to the repository. The interactive project website is published through GitHub Pages.
 
 The combined working files used locally are excluded from GitHub because of file size:
 
@@ -223,4 +242,4 @@ The combined working files used locally are excluded from GitHub because of file
 
 ## Author
 
-Chetan
+Chetan Kishnani
