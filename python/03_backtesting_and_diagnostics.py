@@ -12,7 +12,10 @@ It prepares:
 4. VIF multicollinearity checks
 5. Residual output tables
 
-Run this after the raw combined HDB resale data has been placed in the data folder.
+Backtesting setup:
+The time based models are trained using data up to 2018.
+They are then tested on 2019 to 2025.
+This matches the backtesting explanation used in the final Part 2 report.
 """
 
 from pathlib import Path
@@ -209,10 +212,10 @@ annual["lagged_log_median_price"] = annual["log_median_price"].shift(1)
 # 5. Backtesting setup
 # ---------------------------------------------------------
 
-# Train on 1990 to 2020, test on 2021 to 2025.
-# This checks how the models perform on years that were not used for fitting.
-train = annual[annual["year"] <= 2020].copy()
-test = annual[(annual["year"] >= 2021) & (annual["year"] <= 2025)].copy()
+# Train on 1990 to 2018, test on 2019 to 2025.
+# This matches the final Part 2 report.
+train = annual[annual["year"] <= 2018].copy()
+test = annual[(annual["year"] >= 2019) & (annual["year"] <= 2025)].copy()
 
 backtest_rows = []
 
@@ -230,7 +233,8 @@ test["raw_prediction"] = raw_model.predict(test)
 
 backtest_rows.append({
     "model": "Raw simple regression",
-    "test_period": "2021 to 2025",
+    "train_period": "1990 to 2018",
+    "test_period": "2019 to 2025",
     "rmse": rmse(test["median_price"], test["raw_prediction"]),
     "mae": mae(test["median_price"], test["raw_prediction"])
 })
@@ -249,7 +253,8 @@ test["semi_log_prediction"] = np.exp(semi_log_model.predict(test))
 
 backtest_rows.append({
     "model": "Semi log regression",
-    "test_period": "2021 to 2025",
+    "train_period": "1990 to 2018",
+    "test_period": "2019 to 2025",
     "rmse": rmse(test["median_price"], test["semi_log_prediction"]),
     "mae": mae(test["median_price"], test["semi_log_prediction"])
 })
@@ -260,8 +265,9 @@ backtest_rows.append({
 # ---------------------------------------------------------
 
 train_lagged = train.dropna(subset=["lagged_log_median_price"]).copy()
+
 test_lagged = annual[
-    (annual["year"] >= 2021)
+    (annual["year"] >= 2019)
     & (annual["year"] <= 2025)
     & annual["lagged_log_median_price"].notna()
 ].copy()
@@ -275,7 +281,8 @@ test_lagged["lagged_prediction"] = np.exp(lagged_model.predict(test_lagged))
 
 backtest_rows.append({
     "model": "Lagged semi log regression",
-    "test_period": "2021 to 2025",
+    "train_period": "1990 to 2018",
+    "test_period": "2019 to 2025",
     "rmse": rmse(test_lagged["median_price"], test_lagged["lagged_prediction"]),
     "mae": mae(test_lagged["median_price"], test_lagged["lagged_prediction"])
 })
@@ -286,18 +293,19 @@ backtest_rows.append({
 # ---------------------------------------------------------
 
 backtesting_results = pd.DataFrame(backtest_rows)
+
 backtesting_results.to_csv(
-    DIAGNOSTICS_DIR / "backtesting_results_2021_to_2025.csv",
+    DIAGNOSTICS_DIR / "backtesting_results_2019_to_2025.csv",
     index=False
 )
 
 test.to_csv(
-    DIAGNOSTICS_DIR / "backtesting_predictions_time_models.csv",
+    DIAGNOSTICS_DIR / "backtesting_predictions_time_models_2019_to_2025.csv",
     index=False
 )
 
 test_lagged.to_csv(
-    DIAGNOSTICS_DIR / "backtesting_predictions_lagged_model.csv",
+    DIAGNOSTICS_DIR / "backtesting_predictions_lagged_model_2019_to_2025.csv",
     index=False
 )
 
@@ -385,9 +393,6 @@ lagged_full_data.to_csv(
 # below 5 = usually acceptable
 # 5 to 10 = interpret carefully
 # above 10 = serious multicollinearity concern
-#
-# This check focuses on the main numeric predictors in the hedonic model.
-# Categorical variables are handled with reference categories in the regression.
 
 vif_data = df_complete[
     ["year", "floor_area_sqm", "remaining_lease_years"]
@@ -435,6 +440,10 @@ vif_results.to_csv(
 # ---------------------------------------------------------
 
 print("Backtesting and diagnostics outputs created successfully.")
+print()
+print("Backtesting setup:")
+print("Train period: 1990 to 2018")
+print("Test period: 2019 to 2025")
 print()
 print("Backtesting results:")
 print(backtesting_results)
