@@ -9,9 +9,10 @@ It prepares:
 1. Raw simple regression
 2. Semi log regression
 3. Lagged semi log regression
-4. Hedonic regression
+4. Hedonic regression using a year balanced sample
 5. Model comparison output
-6. 2031 forecast examples
+6. Controlled 2031 town forecast
+7. Controlled 2031 remaining lease forecast
 
 Run this after the raw combined HDB resale data has been placed in the data folder.
 """
@@ -20,7 +21,6 @@ from pathlib import Path
 
 import numpy as np
 import pandas as pd
-import statsmodels.api as sm
 import statsmodels.formula.api as smf
 
 
@@ -106,11 +106,10 @@ def parse_remaining_lease(value):
         return np.nan
 
     text = str(value).lower().strip()
+    parts = text.split()
 
     years = 0
     months = 0
-
-    parts = text.split()
 
     for i, part in enumerate(parts):
         if part.startswith("year") and i > 0:
@@ -122,6 +121,27 @@ def parse_remaining_lease(value):
         return np.nan
 
     return years + months / 12
+
+
+def add_year_column(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add a year column if it does not already exist.
+    """
+    df = df.copy()
+
+    if "year" in df.columns:
+        df["year"] = to_number(df["year"]).astype("Int64")
+        return df
+
+    if "month" in df.columns:
+        df["year"] = df["month"].astype(str).str[:4].astype("Int64")
+        return df
+
+    if "year_month" in df.columns:
+        df["year"] = df["year_month"].astype(str).str[:4].astype("Int64")
+        return df
+
+    raise ValueError("No year, month or year_month column found.")
 
 
 # ---------------------------------------------------------
@@ -136,6 +156,7 @@ if not DATA_PATH.exists():
 
 df = pd.read_csv(DATA_PATH, low_memory=False)
 df = clean_column_names(df)
+df = add_year_column(df)
 
 required_columns = [
     "year",
@@ -299,6 +320,7 @@ for year in range(2026, 2032):
     last_log_price = forecast_log_price
 
 lagged_forecast_table = pd.DataFrame(lagged_forecasts)
+
 lagged_forecast_2031 = lagged_forecast_table.loc[
     lagged_forecast_table["year"] == 2031,
     "forecast_price"
@@ -327,8 +349,42 @@ lagged_results = {
 # ---------------------------------------------------------
 
 # The hedonic model uses transaction level data.
-# It controls for flat characteristics instead of using time only.
-hedonic_data = df_complete[
+# A year balanced sample is used so that each year from 1990 to 2025
+# contributes the same number of transactions to the regression.
+# 1,500 rows per year x 36 years = 54,000 transactions.
+
+SAMPLE_PER_YEAR = 1500
+RANDOM_STATE = 42
+
+available_years = sorted(df_complete["year"].dropna().unique())
+
+low_count_years = (
+    df_complete
+    .groupby("year")
+    .size()
+    .reset_index(name="transaction_count")
+    .query("transaction_count < @SAMPLE_PER_YEAR")
+)
+
+if not low_count_years.empty:
+    raise ValueError(
+        "At least one year has fewer than 1,500 transactions. "
+        "Reduce SAMPLE_PER_YEAR or check the dataset."
+    )
+
+hedonic_sample = (
+    df_complete
+    .groupby("year", group_keys=False)
+    .apply(lambda g: g.sample(n=SAMPLE_PER_YEAR, random_state=RANDOM_STATE))
+    .reset_index(drop=True)
+)
+
+hedonic_sample.to_csv(
+    TABLE_DIR / "hedonic_year_balanced_sample_54000_rows.csv",
+    index=False
+)
+
+hedonic_data = hedonic_sample[
     [
         "log_resale_price",
         "resale_price",
@@ -354,17 +410,25 @@ hedonic_model = smf.ols(
 
 hedonic_data["hedonic_predicted_price"] = np.exp(hedonic_model.predict(hedonic_data))
 
-# Example controlled forecast:
-# 93 sqm 4 ROOM Model A flat in 2031.
-# Town is set to TAMPINES as a mainstream example.
+# Controlled baseline used for the hedonic forecast examples.
+# This matches the report controls:
+# 93 sqm, 4 ROOM, Model A, 10 TO 12 storey range.
+CONTROL_YEAR = 2031
+CONTROL_FLOOR_AREA = 93
+CONTROL_REMAINING_LEASE = 75
+CONTROL_FLAT_TYPE = "4 ROOM"
+CONTROL_FLAT_MODEL = "MODEL A"
+CONTROL_STOREY_RANGE = "10 TO 12"
+CONTROL_TOWN = "TAMPINES"
+
 controlled_example = pd.DataFrame({
-    "year": [2031],
-    "floor_area_sqm": [93],
-    "remaining_lease_years": [70],
-    "town": ["TAMPINES"],
-    "flat_type": ["4 ROOM"],
-    "flat_model": ["MODEL A"],
-    "storey_range": ["07 TO 09"]
+    "year": [CONTROL_YEAR],
+    "floor_area_sqm": [CONTROL_FLOOR_AREA],
+    "remaining_lease_years": [CONTROL_REMAINING_LEASE],
+    "town": [CONTROL_TOWN],
+    "flat_type": [CONTROL_FLAT_TYPE],
+    "flat_model": [CONTROL_FLAT_MODEL],
+    "storey_range": [CONTROL_STOREY_RANGE]
 })
 
 controlled_forecast_2031 = np.exp(
@@ -381,12 +445,101 @@ hedonic_results = {
     "forecast_2031": controlled_forecast_2031,
     "year_coefficient": hedonic_model.params["year"],
     "year_p_value": hedonic_model.pvalues["year"],
-    "f_statistic": hedonic_model.fvalue
+    "f_statistic": hedonic_model.fvalue,
+    "sample_rows": len(hedonic_data)
 }
 
 
 # ---------------------------------------------------------
-# 9. Save model comparison outputs
+# 9. Table 10: controlled town forecast
+# ---------------------------------------------------------
+
+towns = [
+    "WOODLANDS",
+    "CHOA CHU KANG",
+    "PUNGGOL",
+    "TAMPINES",
+    "QUEENSTOWN",
+    "BISHAN",
+    "BUKIT MERAH"
+]
+
+town_forecast_rows = []
+
+for town in towns:
+    example = pd.DataFrame({
+        "year": [CONTROL_YEAR],
+        "floor_area_sqm": [CONTROL_FLOOR_AREA],
+        "remaining_lease_years": [CONTROL_REMAINING_LEASE],
+        "town": [town],
+        "flat_type": [CONTROL_FLAT_TYPE],
+        "flat_model": [CONTROL_FLAT_MODEL],
+        "storey_range": [CONTROL_STOREY_RANGE]
+    })
+
+    predicted_price = np.exp(hedonic_model.predict(example))[0]
+
+    town_forecast_rows.append({
+        "town": town,
+        "year": CONTROL_YEAR,
+        "floor_area_sqm": CONTROL_FLOOR_AREA,
+        "remaining_lease_years": CONTROL_REMAINING_LEASE,
+        "flat_type": CONTROL_FLAT_TYPE,
+        "flat_model": CONTROL_FLAT_MODEL,
+        "storey_range": CONTROL_STOREY_RANGE,
+        "predicted_2031_price": predicted_price
+    })
+
+town_forecast_table = pd.DataFrame(town_forecast_rows)
+
+town_forecast_table.to_csv(
+    TABLE_DIR / "table10_controlled_town_forecast.csv",
+    index=False
+)
+
+
+# ---------------------------------------------------------
+# 10. Table 11: controlled remaining lease forecast
+# ---------------------------------------------------------
+
+lease_values = [55, 60, 65, 70, 75]
+
+lease_forecast_rows = []
+
+for lease_years in lease_values:
+    example = pd.DataFrame({
+        "year": [CONTROL_YEAR],
+        "floor_area_sqm": [CONTROL_FLOOR_AREA],
+        "remaining_lease_years": [lease_years],
+        "town": [CONTROL_TOWN],
+        "flat_type": [CONTROL_FLAT_TYPE],
+        "flat_model": [CONTROL_FLAT_MODEL],
+        "storey_range": [CONTROL_STOREY_RANGE]
+    })
+
+    predicted_price = np.exp(hedonic_model.predict(example))[0]
+
+    lease_forecast_rows.append({
+        "remaining_lease_years": lease_years,
+        "year": CONTROL_YEAR,
+        "town": CONTROL_TOWN,
+        "floor_area_sqm": CONTROL_FLOOR_AREA,
+        "flat_type": CONTROL_FLAT_TYPE,
+        "flat_model": CONTROL_FLAT_MODEL,
+        "storey_range": CONTROL_STOREY_RANGE,
+        "predicted_2031_price": predicted_price
+    })
+
+lease_forecast_table = pd.DataFrame(lease_forecast_rows)
+
+lease_forecast_table.to_csv(
+    TABLE_DIR / "table11_controlled_remaining_lease_forecast.csv",
+    index=False
+)
+
+
+# ---------------------------------------------------------
+# 11. Save model comparison outputs
 # ---------------------------------------------------------
 
 model_comparison = pd.DataFrame([
@@ -412,20 +565,36 @@ controlled_example.to_csv(
 
 
 # ---------------------------------------------------------
-# 10. Save coefficient summaries
+# 12. Save coefficient summaries
 # ---------------------------------------------------------
 
-raw_model.summary2().tables[1].to_csv(TABLE_DIR / "raw_simple_regression_coefficients.csv")
-semi_log_model.summary2().tables[1].to_csv(TABLE_DIR / "semi_log_regression_coefficients.csv")
-lagged_model.summary2().tables[1].to_csv(TABLE_DIR / "lagged_semi_log_regression_coefficients.csv")
-hedonic_model.summary2().tables[1].to_csv(TABLE_DIR / "hedonic_regression_coefficients.csv")
+raw_model.summary2().tables[1].to_csv(
+    TABLE_DIR / "raw_simple_regression_coefficients.csv"
+)
+
+semi_log_model.summary2().tables[1].to_csv(
+    TABLE_DIR / "semi_log_regression_coefficients.csv"
+)
+
+lagged_model.summary2().tables[1].to_csv(
+    TABLE_DIR / "lagged_semi_log_regression_coefficients.csv"
+)
+
+hedonic_model.summary2().tables[1].to_csv(
+    TABLE_DIR / "hedonic_regression_coefficients.csv"
+)
 
 
 # ---------------------------------------------------------
-# 11. Print summary for checking
+# 13. Print summary for checking
 # ---------------------------------------------------------
 
 print("Part 2 regression outputs created successfully.")
+print()
+print("Hedonic sample check:")
+print(f"Rows used in hedonic model: {len(hedonic_data):,}")
+print(f"Rows per year: {SAMPLE_PER_YEAR:,}")
+print(f"Years sampled: {len(available_years)}")
 print()
 print("Model comparison:")
 print(model_comparison[["model", "r_squared", "adjusted_r_squared", "rmse", "mae", "forecast_2031"]])
@@ -435,6 +604,12 @@ print(f"Raw simple regression: {format_money(raw_forecast)}")
 print(f"Semi log regression: {format_money(semi_log_forecast)}")
 print(f"Lagged semi log regression: {format_money(lagged_forecast_2031)}")
 print(f"Hedonic controlled example: {format_money(controlled_forecast_2031)}")
+print()
+print("Controlled town forecast table:")
+print(town_forecast_table[["town", "predicted_2031_price"]])
+print()
+print("Controlled remaining lease forecast table:")
+print(lease_forecast_table[["remaining_lease_years", "predicted_2031_price"]])
 print()
 print("Outputs saved in:")
 print(TABLE_DIR)
