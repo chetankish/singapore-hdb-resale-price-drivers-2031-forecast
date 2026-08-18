@@ -502,7 +502,7 @@ town_forecast_table.to_csv(
 # 10. Table 11: controlled remaining lease forecast
 # ---------------------------------------------------------
 
-lease_values = [55, 60, 65, 70, 75]
+lease_values = [45, 55, 65, 75, 85]
 
 lease_forecast_rows = []
 
