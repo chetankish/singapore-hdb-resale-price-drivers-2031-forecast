@@ -502,6 +502,8 @@ town_forecast_table.to_csv(
 # 10. Table 11: controlled remaining lease forecast
 # ---------------------------------------------------------
 
+# These values match Table 11 in the report exactly:
+# 45, 55, 65, 75, 85 years, in 10-year steps.
 lease_values = [45, 55, 65, 75, 85]
 
 lease_forecast_rows = []
