@@ -394,7 +394,7 @@ lagged_full_data.to_csv(
 # 5 to 10 = interpret carefully
 # above 10 = serious multicollinearity concern
 
-vif_data = df_complete[
+vif_data = hedonic_sample[
     ["year", "floor_area_sqm", "remaining_lease_years"]
 ].dropna().copy()
 
