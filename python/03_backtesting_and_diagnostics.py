@@ -16,6 +16,10 @@ Backtesting setup:
 The time based models are trained using data up to 2018.
 They are then tested on 2019 to 2025.
 This matches the backtesting explanation used in the final Part 2 report.
+
+Note: this script depends on 02_part2_regression_models.py having been
+run first, since the VIF check loads the year balanced hedonic sample
+that script produces.
 """
 
 from pathlib import Path
@@ -36,9 +40,15 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = PROJECT_ROOT / "data" / "Raw Data Combined.csv"
 
 OUTPUT_DIR = PROJECT_ROOT / "outputs" / "part2"
+TABLE_DIR = OUTPUT_DIR / "tables"
 DIAGNOSTICS_DIR = OUTPUT_DIR / "diagnostics"
 
 DIAGNOSTICS_DIR.mkdir(parents=True, exist_ok=True)
+
+# The year balanced hedonic sample produced by 02_part2_regression_models.py.
+# VIF is checked against this sample, not the full population, so the
+# diagnostic reflects the same data the hedonic model was actually fit on.
+HEDONIC_SAMPLE_PATH = TABLE_DIR / "hedonic_year_balanced_sample_54000_rows.csv"
 
 
 # ---------------------------------------------------------
@@ -393,6 +403,19 @@ lagged_full_data.to_csv(
 # below 5 = usually acceptable
 # 5 to 10 = interpret carefully
 # above 10 = serious multicollinearity concern
+#
+# This check uses the same year balanced 54,000 row sample that the
+# hedonic model in 02_part2_regression_models.py was actually fit on,
+# rather than the full cleaned population, so the diagnostic matches
+# the data the model saw.
+
+if not HEDONIC_SAMPLE_PATH.exists():
+    raise FileNotFoundError(
+        f"Hedonic sample not found: {HEDONIC_SAMPLE_PATH}\n"
+        "Run 02_part2_regression_models.py first to generate it."
+    )
+
+hedonic_sample = pd.read_csv(HEDONIC_SAMPLE_PATH)
 
 vif_data = hedonic_sample[
     ["year", "floor_area_sqm", "remaining_lease_years"]
@@ -451,6 +474,7 @@ print()
 print("Time model diagnostics:")
 print(diagnostics)
 print()
+print(f"VIF check sample size: {len(hedonic_sample):,} rows")
 print("VIF results:")
 print(vif_results)
 print()
