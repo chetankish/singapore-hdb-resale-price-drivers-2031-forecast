@@ -4,17 +4,15 @@ Singapore HDB Resale Price Drivers and 2031 Forecast
 
 This script creates the segment analysis outputs used in Part 1.
 It uses the cleaned table created in 02_cleaning_and_features.sql.
+
 Input table: hdb_resale_clean
 */
-
 
 /*
 Million dollar resale transactions by year.
 The share is useful because counts alone can rise when total transaction volume rises.
 */
-
 DROP VIEW IF EXISTS analysis_million_dollar_by_year;
-
 CREATE VIEW analysis_million_dollar_by_year AS
 SELECT
     transaction_year,
@@ -29,17 +27,21 @@ WHERE transaction_year <= 2025
 GROUP BY transaction_year
 ORDER BY transaction_year;
 
-
 /*
 Flat type comparison for 2025.
 This supports the flat type discussion in Part 1.
+
+Medians are pre-aggregated in their own CTEs before joining, rather
+than joining ranked rows directly on flat_type. This avoids a
+temporary row fan-out for flat types with an even transaction count
+(two middle ranks), which would still average to the correct value
+via AVG() but is not a provably correct join pattern. This matches
+the pattern already used in 03_part1_analysis_outputs.sql.
 */
-
 DROP VIEW IF EXISTS analysis_flat_type_2025;
-
 CREATE VIEW analysis_flat_type_2025 AS
 WITH
-ranked_price AS (
+price_ranked AS (
     SELECT
         flat_type,
         resale_price,
@@ -53,8 +55,15 @@ ranked_price AS (
     FROM hdb_resale_clean
     WHERE transaction_year = 2025
 ),
-
-ranked_psqm AS (
+price_median AS (
+    SELECT
+        flat_type,
+        AVG(resale_price) AS median_resale_price
+    FROM price_ranked
+    WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2)
+    GROUP BY flat_type
+),
+psqm_ranked AS (
     SELECT
         flat_type,
         price_per_sqm,
@@ -68,7 +77,14 @@ ranked_psqm AS (
     FROM hdb_resale_clean
     WHERE transaction_year = 2025
 ),
-
+psqm_median AS (
+    SELECT
+        flat_type,
+        AVG(price_per_sqm) AS median_price_per_sqm
+    FROM psqm_ranked
+    WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2)
+    GROUP BY flat_type
+),
 volume AS (
     SELECT
         flat_type,
@@ -77,76 +93,73 @@ volume AS (
     WHERE transaction_year = 2025
     GROUP BY flat_type
 )
-
 SELECT
     v.flat_type,
     v.transaction_count,
-    ROUND(AVG(rp.resale_price), 0) AS median_resale_price,
-    ROUND(AVG(rs.price_per_sqm), 0) AS median_price_per_sqm
+    ROUND(p.median_resale_price, 0) AS median_resale_price,
+    ROUND(s.median_price_per_sqm, 0) AS median_price_per_sqm
 FROM volume v
-JOIN ranked_price rp
-    ON v.flat_type = rp.flat_type
-   AND rp.rn IN ((rp.cnt + 1) / 2, (rp.cnt + 2) / 2)
-JOIN ranked_psqm rs
-    ON v.flat_type = rs.flat_type
-   AND rs.rn IN ((rs.cnt + 1) / 2, (rs.cnt + 2) / 2)
-GROUP BY
-    v.flat_type,
-    v.transaction_count
+JOIN price_median p
+    ON v.flat_type = p.flat_type
+JOIN psqm_median s
+    ON v.flat_type = s.flat_type
 ORDER BY v.transaction_count DESC;
-
 
 /*
 Town comparison for 2025.
-Town is used as a practical location signal because exact amenity distances are not in the dataset.
+Town is used as a practical location signal because exact amenity
+distances are not in the dataset.
+
+Same pre-aggregate-then-join pattern as analysis_flat_type_2025 above,
+for the same correctness reason.
 */
-
 DROP VIEW IF EXISTS analysis_town_2025;
-
 CREATE VIEW analysis_town_2025 AS
 WITH
-ranked AS (
+price_ranked AS (
     SELECT
         town,
         resale_price,
-        price_per_sqm,
-
         ROW_NUMBER() OVER (
             PARTITION BY town
             ORDER BY resale_price
-        ) AS price_rn,
-
-        ROW_NUMBER() OVER (
-            PARTITION BY town
-            ORDER BY price_per_sqm
-        ) AS psqm_rn,
-
+        ) AS rn,
         COUNT(*) OVER (
             PARTITION BY town
         ) AS cnt
-
     FROM hdb_resale_clean
     WHERE transaction_year = 2025
 ),
-
 price_median AS (
     SELECT
         town,
         AVG(resale_price) AS median_resale_price
-    FROM ranked
-    WHERE price_rn IN ((cnt + 1) / 2, (cnt + 2) / 2)
+    FROM price_ranked
+    WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2)
     GROUP BY town
 ),
-
+psqm_ranked AS (
+    SELECT
+        town,
+        price_per_sqm,
+        ROW_NUMBER() OVER (
+            PARTITION BY town
+            ORDER BY price_per_sqm
+        ) AS rn,
+        COUNT(*) OVER (
+            PARTITION BY town
+        ) AS cnt
+    FROM hdb_resale_clean
+    WHERE transaction_year = 2025
+),
 psqm_median AS (
     SELECT
         town,
         AVG(price_per_sqm) AS median_price_per_sqm
-    FROM ranked
-    WHERE psqm_rn IN ((cnt + 1) / 2, (cnt + 2) / 2)
+    FROM psqm_ranked
+    WHERE rn IN ((cnt + 1) / 2, (cnt + 2) / 2)
     GROUP BY town
 ),
-
 volume AS (
     SELECT
         town,
@@ -155,7 +168,6 @@ volume AS (
     WHERE transaction_year = 2025
     GROUP BY town
 )
-
 SELECT
     v.town,
     v.transaction_count,
@@ -168,14 +180,12 @@ JOIN psqm_median s
     ON v.town = s.town
 ORDER BY median_resale_price DESC;
 
-
 /*
 Remaining lease bands for 2025.
-This supports the discussion that remaining lease matters because HDB flats have finite leases.
+This supports the discussion that remaining lease matters because
+HDB flats have finite leases.
 */
-
 DROP VIEW IF EXISTS analysis_remaining_lease_bands_2025;
-
 CREATE VIEW analysis_remaining_lease_bands_2025 AS
 SELECT
     CASE
@@ -186,11 +196,9 @@ SELECT
         WHEN remaining_lease_years BETWEEN 80 AND 89 THEN '80 to 89 years'
         ELSE '90 plus years'
     END AS remaining_lease_band,
-
     COUNT(*) AS transaction_count,
     ROUND(AVG(resale_price), 0) AS average_resale_price,
     ROUND(AVG(price_per_sqm), 0) AS average_price_per_sqm
-
 FROM hdb_resale_clean
 WHERE transaction_year = 2025
 GROUP BY remaining_lease_band
