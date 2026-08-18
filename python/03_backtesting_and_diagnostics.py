@@ -9,8 +9,9 @@ It prepares:
 1. Backtesting results
 2. RMSE and MAE comparison
 3. Durbin Watson autocorrelation checks
-4. VIF multicollinearity checks
-5. Residual output tables
+4. HAC robust standard error comparison
+5. VIF multicollinearity checks
+6. Residual output tables
 
 Backtesting setup:
 The time based models are trained using data up to 2018.
@@ -371,7 +372,71 @@ diagnostics.to_csv(
 
 
 # ---------------------------------------------------------
-# 11. Save residuals for checking
+# 11. HAC robust standard error comparison
+# ---------------------------------------------------------
+
+# The Durbin Watson statistics above show autocorrelation in the
+# residuals of all three time based models. Autocorrelation does not
+# bias the coefficient estimates, but it can make the usual OLS
+# standard errors, t statistics and p values unreliable.
+#
+# To check whether this changes which coefficients look statistically
+# significant, each model is refit using Newey West HAC robust
+# standard errors. The point estimates and forecasts are unchanged.
+# Only the standard errors and p values are recalculated.
+
+raw_full_hac = smf.ols(
+    formula="median_price ~ year",
+    data=annual
+).fit(cov_type="HAC", cov_kwds={"maxlags": 2})
+
+semi_log_full_hac = smf.ols(
+    formula="log_median_price ~ year",
+    data=annual
+).fit(cov_type="HAC", cov_kwds={"maxlags": 2})
+
+lagged_full_hac = smf.ols(
+    formula="log_median_price ~ year + lagged_log_median_price",
+    data=lagged_full_data
+).fit(cov_type="HAC", cov_kwds={"maxlags": 2})
+
+hac_comparison_rows = [
+    {
+        "model": "Raw simple regression",
+        "year_coefficient": raw_full.params["year"],
+        "year_pvalue_ols": raw_full.pvalues["year"],
+        "year_pvalue_hac": raw_full_hac.pvalues["year"],
+        "year_stderr_ols": raw_full.bse["year"],
+        "year_stderr_hac": raw_full_hac.bse["year"]
+    },
+    {
+        "model": "Semi log regression",
+        "year_coefficient": semi_log_full.params["year"],
+        "year_pvalue_ols": semi_log_full.pvalues["year"],
+        "year_pvalue_hac": semi_log_full_hac.pvalues["year"],
+        "year_stderr_ols": semi_log_full.bse["year"],
+        "year_stderr_hac": semi_log_full_hac.bse["year"]
+    },
+    {
+        "model": "Lagged semi log regression",
+        "year_coefficient": lagged_full.params["year"],
+        "year_pvalue_ols": lagged_full.pvalues["year"],
+        "year_pvalue_hac": lagged_full_hac.pvalues["year"],
+        "year_stderr_ols": lagged_full.bse["year"],
+        "year_stderr_hac": lagged_full_hac.bse["year"]
+    }
+]
+
+hac_comparison = pd.DataFrame(hac_comparison_rows)
+
+hac_comparison.to_csv(
+    DIAGNOSTICS_DIR / "hac_robust_pvalue_comparison.csv",
+    index=False
+)
+
+
+# ---------------------------------------------------------
+# 12. Save residuals for checking
 # ---------------------------------------------------------
 
 annual["raw_residual"] = raw_full.resid
@@ -395,7 +460,7 @@ lagged_full_data.to_csv(
 
 
 # ---------------------------------------------------------
-# 12. VIF check for hedonic regression numeric variables
+# 13. VIF check for hedonic regression numeric variables
 # ---------------------------------------------------------
 
 # VIF checks whether predictors are strongly related to each other.
@@ -459,7 +524,7 @@ vif_results.to_csv(
 
 
 # ---------------------------------------------------------
-# 13. Print summary for checking
+# 14. Print summary for checking
 # ---------------------------------------------------------
 
 print("Backtesting and diagnostics outputs created successfully.")
@@ -473,6 +538,9 @@ print(backtesting_results)
 print()
 print("Time model diagnostics:")
 print(diagnostics)
+print()
+print("HAC robust p value comparison:")
+print(hac_comparison)
 print()
 print(f"VIF check sample size: {len(hedonic_sample):,} rows")
 print("VIF results:")
